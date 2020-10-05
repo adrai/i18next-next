@@ -20,6 +20,8 @@ i18n.addHook('extendOptions', () => {
 
 i18n.addHook('loadResources', () => ({ 'my.key': 'a value' }))
 
+i18n.addHook('resolvePlural', (key, options) => `${key}_${options.count}`)
+
 await i18n.init()
 
 i18n.t('my.key') // a value
