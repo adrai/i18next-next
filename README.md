@@ -20,9 +20,9 @@ i18n.addHook('extendOptions', () => {
 
 i18n.addHook('loadResources', () => ({ 'my.key': 'a value' }))
 
-i18n.addHook('resolvePlural', (key, options) => `${key}_${options.count}`)
+i18n.addHook('resolvePlural', (key, count, options) => `${key}_${options.count}`)
 
-i18n.addHook('translate', (key, options, res) => res[key])
+i18n.addHook('translate', (key, res, options) => res[key])
 
 
 i18n.on('initialized', (i18n) => {
