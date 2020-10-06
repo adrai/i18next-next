@@ -38,11 +38,12 @@ describe('i18next', () => {
 
   it('custom plural resolver', async () => {
     const i18nextInstance = i18next()
-    i18nextInstance.addHook('loadResources', () => ({ key: 'a value', key_3: '3 values', '8_key': 'values from other resolver' }))
-    i18nextInstance.addHook('resolvePlural', (key, count) => {
-      if (count < 4) return `${key}_${count}`
-    })
-    i18nextInstance.addHook('resolvePlural', (key, count) => `${count * 2}_${key}`)
+    i18nextInstance
+      .addHook('loadResources', () => ({ key: 'a value', key_3: '3 values', '8_key': 'values from other resolver' }))
+      .addHook('resolvePlural', (key, count) => {
+        if (count < 4) return `${key}_${count}`
+      })
+      .addHook('resolvePlural', (key, count) => `${count * 2}_${key}`)
     await i18nextInstance.init()
     let translated = i18nextInstance.t('key', { count: 3 })
     should(translated).eql('3 values')
