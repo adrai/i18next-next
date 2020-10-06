@@ -82,4 +82,26 @@ describe('i18next', () => {
     const translated = i18nextInstance.t('key', { count: 3 })
     should(translated).eql('some values')
   })
+
+  it('use module', async () => {
+    const i18nextInstance = i18next({ lng: 'en' })
+    i18nextInstance.use({ // this would be a separate module, like a backend connector...
+      register: (i18n) => {
+        i18n.addHook('loadResources', () => ({
+          en: {
+            translation: {
+              prefixed: {
+                key: 'a value',
+                key_plural: 'some values'
+              }
+            }
+          }
+        }))
+        i18n.addHook('translate', (key, ns, lng, res) => res[lng][ns].prefixed[key])
+      }
+    })
+    await i18nextInstance.init()
+    const translated = i18nextInstance.t('key', { count: 3 })
+    should(translated).eql('some values')
+  })
 })

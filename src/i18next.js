@@ -42,7 +42,7 @@ class I18next extends EventEmitter {
   }
 
   async runLoadResourcesHooks () {
-    const allResources = await runHooks(this.loadResourcesHooks, [])
+    const allResources = await runHooks(this.loadResourcesHooks, [this.options])
     return allResources.reduce((prev, curr) => ({ ...prev, ...curr }), {})
   }
 
@@ -63,6 +63,15 @@ class I18next extends EventEmitter {
   /**
    * public api
    */
+
+  use (module) {
+    if (!module) throw new Error('You are passing an undefined module! Please check the object you are passing to i18next.use()')
+    if (module.type) throw new Error('You are probably passing an old module! Please check the object you are passing to i18next.use()')
+    if (typeof module.register !== 'function') throw new Error('You are passing a wrong module! Please check the object you are passing to i18next.use()')
+
+    module.register(this)
+    return this
+  }
 
   addHook (name, hook) {
     if (hookNames.indexOf(name) < 0) throw new Error(`${name} is not a valid hook!`)
