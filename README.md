@@ -24,6 +24,11 @@ i18n.addHook('resolvePlural', (key, options) => `${key}_${options.count}`)
 
 i18n.addHook('translate', (key, options, res) => res[key])
 
+
+i18n.on('initialized', (i18n) => {
+  console.log('i18next has been initialized')
+})
+
 await i18n.init()
 
 i18n.t('my.key') // a value
