@@ -3,7 +3,7 @@ import should from 'should'
 
 describe('i18next', () => {
   it('basic addHook stuff', async () => {
-    const i18nextInstance = i18next({ some: 'options' })
+    const i18nextInstance = i18next({ lng: 'en', some: 'options' })
     i18nextInstance.addHook('extendOptions', () => {
       return { add: 'this' }
     })
@@ -12,7 +12,13 @@ describe('i18next', () => {
         setTimeout(() => resolve({ another: 'thing' }), 50)
       })
     })
-    i18nextInstance.addHook('loadResources', () => ({ 'a key': 'a value' }))
+    i18nextInstance.addHook('loadResources', () => ({
+      en: {
+        translation: {
+          'a key': 'a value'
+        }
+      }
+    }))
     await i18nextInstance.init()
     should(i18nextInstance.options).have.properties({
       some: 'options',
@@ -37,13 +43,21 @@ describe('i18next', () => {
   })
 
   it('custom plural resolver', async () => {
-    const i18nextInstance = i18next()
+    const i18nextInstance = i18next({ lng: 'en' })
     i18nextInstance
-      .addHook('loadResources', () => ({ key: 'a value', key_3: '3 values', '8_key': 'values from other resolver' }))
-      .addHook('resolvePlural', (key, count) => {
+      .addHook('loadResources', () => ({
+        en: {
+          translation: {
+            key: 'a value',
+            key_3: '3 values',
+            '8_key': 'values from other resolver'
+          }
+        }
+      }))
+      .addHook('resolvePlural', (count, key, ns, lng) => {
         if (count < 4) return `${key}_${count}`
       })
-      .addHook('resolvePlural', (key, count) => `${count * 2}_${key}`)
+      .addHook('resolvePlural', (count, key, ns, lng) => `${count * 2}_${key}`)
     await i18nextInstance.init()
     let translated = i18nextInstance.t('key', { count: 3 })
     should(translated).eql('3 values')
@@ -52,9 +66,18 @@ describe('i18next', () => {
   })
 
   it('custom translator', async () => {
-    const i18nextInstance = i18next()
-    i18nextInstance.addHook('loadResources', () => ({ prefixed: { key: 'a value', key_plural: 'some values' } }))
-    i18nextInstance.addHook('translate', (key, res) => res.prefixed[key])
+    const i18nextInstance = i18next({ lng: 'en' })
+    i18nextInstance.addHook('loadResources', () => ({
+      en: {
+        translation: {
+          prefixed: {
+            key: 'a value',
+            key_plural: 'some values'
+          }
+        }
+      }
+    }))
+    i18nextInstance.addHook('translate', (key, ns, lng, res) => res[lng][ns].prefixed[key])
     await i18nextInstance.init()
     const translated = i18nextInstance.t('key', { count: 3 })
     should(translated).eql('some values')

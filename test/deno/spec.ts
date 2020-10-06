@@ -7,7 +7,7 @@ const { test } = Deno
 
 test('onExtendOptions', async () => {
   // before
-  const i18nextInstance = i18next({ some: 'options' })
+  const i18nextInstance = i18next({ lng: 'en', some: 'options' })
   i18nextInstance.addHook('extendOptions', () => {
     return { add: 'this' }
   })
@@ -16,14 +16,22 @@ test('onExtendOptions', async () => {
       setTimeout(() => resolve({ another: 'thing' }), 50)
     })
   })
-  i18nextInstance.addHook('loadResources', () => ({ 'a key': 'a value' }))
+  i18nextInstance.addHook('loadResources', () => ({
+    en: {
+      translation: {
+        'a key': 'a value'
+      }
+    }
+  }))
   await i18nextInstance.init()
   assertEquals(i18nextInstance.options, {
     some: 'options',
     add: 'this',
     another: 'thing',
     pluralOptionProperty: 'count',
-    debug: false
+    debug: false,
+    defaultNS: 'translation',
+    lng: 'en'
   })
   const translated = i18nextInstance.t('a key')
   assertEquals(translated, 'a value')

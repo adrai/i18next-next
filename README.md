@@ -5,7 +5,7 @@
 ```javascript
 import i18next from 'i18next'
 
-const i18n = i18next({ some: 'options' })
+const i18n = i18next({ lng: 'en' })
 
 i18n.addHook('extendOptions', async () => {
   const additionalOptions = await takeOptionsFromSomewhere()
@@ -18,11 +18,17 @@ i18n.addHook('extendOptions', () => {
 })
 
 
-i18n.addHook('loadResources', () => ({ 'my.key': 'a value' }))
+i18n.addHook('loadResources', () => ({
+  en: {
+    translation: {
+      'my.key': 'a value'
+    }
+  }
+}))
 
-i18n.addHook('resolvePlural', (key, count, options) => `${key}_${options.count}`)
+i18n.addHook('resolvePlural', (count, key, ns, lng, options) => `${key}_${count}`)
 
-i18n.addHook('translate', (key, res, options) => res[key])
+i18n.addHook('translate', (key, ns, lng, res, options) => res[lng][ns][key])
 
 
 i18n.on('initialized', (i18n) => {
