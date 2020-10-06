@@ -26,11 +26,22 @@ declare type ExtendOptionsHandler = (options: Record<string, unknown>) => Record
 declare type LoadResourcesHandler = () => StringMap | Promise<StringMap>
 
 export interface I18nextInstance {
+  options: Record<string, unknown>
   // The default of the i18next module is an i18next instance ready to be initialized by calling init.
   init(): Promise<I18nextInstance>
 
   addHook(name: 'extendOptions', hook: ExtendOptionsHandler): I18nextInstance
   addHook(name: 'loadResources', hook: LoadResourcesHandler): I18nextInstance
+
+  /**
+   * Gets fired after initialization.
+   */
+  on(event: 'initialized', callback: (i18next: I18nextInstance) => void): void
+
+  /**
+   * Event listener
+   */
+  on(event: string, listener: (...args: any[]) => void): void
 
   // Expose parameterized t in the i18next interface hierarchy
   t: TFunction

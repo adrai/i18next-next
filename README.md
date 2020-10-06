@@ -22,6 +22,8 @@ i18n.addHook('loadResources', () => ({ 'my.key': 'a value' }))
 
 i18n.addHook('resolvePlural', (key, options) => `${key}_${options.count}`)
 
+i18n.addHook('translate', (key, options, res) => res[key])
+
 await i18n.init()
 
 i18n.t('my.key') // a value

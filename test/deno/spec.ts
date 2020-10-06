@@ -13,7 +13,7 @@ test('onExtendOptions', async () => {
   })
   i18nextInstance.addHook('extendOptions', () => {
     return new Promise((resolve) => {
-      setTimeout(() => resolve({ another: 'thing' }), 200)
+      setTimeout(() => resolve({ another: 'thing' }), 50)
     })
   })
   i18nextInstance.addHook('loadResources', () => ({ 'a key': 'a value' }))
@@ -21,7 +21,9 @@ test('onExtendOptions', async () => {
   assertEquals(i18nextInstance.options, {
     some: 'options',
     add: 'this',
-    another: 'thing'
+    another: 'thing',
+    pluralOptionProperty: 'count',
+    debug: false
   })
   const translated = i18nextInstance.t('a key')
   assertEquals(translated, 'a value')
