@@ -3,7 +3,9 @@ export const hookNames = [
   'loadResources',
   'resolvePlural',
   'translate',
-  'read'
+  'read',
+  'detectLanguage',
+  'cacheLanguage'
 ]
 
 export const runHooks = async (hooks, args) => {

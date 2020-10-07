@@ -12,7 +12,7 @@ var _regeneratorRuntime__default = /*#__PURE__*/_interopDefaultLegacy(_regenerat
 var _asyncToGenerator__default = /*#__PURE__*/_interopDefaultLegacy(_asyncToGenerator);
 var _toConsumableArray__default = /*#__PURE__*/_interopDefaultLegacy(_toConsumableArray);
 
-var hookNames = ['extendOptions', 'loadResources', 'resolvePlural', 'translate'];
+var hookNames = ['extendOptions', 'loadResources', 'resolvePlural', 'translate', 'read', 'detectLanguage', 'cacheLanguage'];
 var runHooks = function () {
   var _ref = _asyncToGenerator__default['default'](_regeneratorRuntime__default['default'].mark(function _callee(hooks, args) {
     return _regeneratorRuntime__default['default'].wrap(function _callee$(_context) {

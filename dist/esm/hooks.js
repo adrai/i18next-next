@@ -2,7 +2,7 @@ import _regeneratorRuntime from '@babel/runtime/regenerator';
 import _asyncToGenerator from '@babel/runtime/helpers/esm/asyncToGenerator';
 import _toConsumableArray from '@babel/runtime/helpers/esm/toConsumableArray';
 
-var hookNames = ['extendOptions', 'loadResources', 'resolvePlural', 'translate'];
+var hookNames = ['extendOptions', 'loadResources', 'resolvePlural', 'translate', 'read', 'detectLanguage', 'cacheLanguage'];
 var runHooks = function () {
   var _ref = _asyncToGenerator(_regeneratorRuntime.mark(function _callee(hooks, args) {
     return _regeneratorRuntime.wrap(function _callee$(_context) {

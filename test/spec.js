@@ -121,7 +121,7 @@ describe('i18next', () => {
       return res
     })
     await i18nextInstance.init()
-    await i18nextInstance.loadNamespace('translation')
+    // await i18nextInstance.loadNamespace('translation') // loaded via preload in init
     let translated = i18nextInstance.t('key')
     should(translated).eql('a value for en/translation')
     await i18nextInstance.loadNamespace('translation', 'de')
@@ -153,7 +153,7 @@ describe('i18next', () => {
     }
     const compatibilityLayer = (opt) => ({ // opt are module specific options... not anymore passed as backend options on global i18next options
       register: (i18n) => {
-        const oldModule = new Backend({ /* i18next.services, will also exist */ }, opt)
+        const oldModule = new Backend(i18n.services, opt)
         i18n.addHook('read', async (toLoad) => {
           const toRead = []
           Object.keys(toLoad).forEach((lng) => {
@@ -183,5 +183,40 @@ describe('i18next', () => {
     await i18nextInstance.loadNamespace('translation', 'de')
     translated = i18nextInstance.t('key', { lng: 'de' })
     should(translated).eql('a value for de/translation from old backend')
+  })
+
+  it('changeLanguage and languageDetector', async () => {
+    const cachedLanguages = []
+    const i18nextInstance = i18next()
+    i18nextInstance
+      .addHook('read', (toLoad) => {
+        const res = {}
+        Object.keys(toLoad).forEach((lng) => {
+          toLoad[lng].forEach((ns) => {
+            res[lng] = res[lng] || {}
+            res[lng][ns] = {
+              key: `a value for ${lng}/${ns}`
+            }
+          })
+        })
+        return res
+      })
+      .addHook('detectLanguage', () => 'en')
+      .addHook('cacheLanguage', (lng) => {
+        cachedLanguages.push(lng)
+      })
+
+    await i18nextInstance.init()
+    let translated = i18nextInstance.t('key')
+    should(translated).eql('a value for en/translation')
+    await i18nextInstance.loadNamespace('ns2')
+    translated = i18nextInstance.t('key', { ns: 'ns2' })
+    should(translated).eql('a value for en/ns2')
+    await i18nextInstance.changeLanguage('de')
+    translated = i18nextInstance.t('key')
+    should(translated).eql('a value for de/translation')
+    translated = i18nextInstance.t('key', { ns: 'ns2' })
+    should(translated).eql('a value for de/ns2')
+    should(cachedLanguages).eql(['en', 'de'])
   })
 })
