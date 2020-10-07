@@ -151,7 +151,7 @@ describe('i18next', () => {
         })
       }
     }
-    const compatabilityLayer = (opt) => ({ // opt are module specific options... not anymore passed as backend options on global i18next options
+    const compatibilityLayer = (opt) => ({ // opt are module specific options... not anymore passed as backend options on global i18next options
       register: (i18n) => {
         const oldModule = new Backend({ /* i18next.services, will also exist */ }, opt)
         i18n.addHook('read', async (toLoad) => {
@@ -175,7 +175,7 @@ describe('i18next', () => {
     })
 
     const i18nextInstance = i18next({ lng: 'en' })
-    i18nextInstance.use(compatabilityLayer({ whatever: 'options' }))
+    i18nextInstance.use(compatibilityLayer({ whatever: 'options' }))
     await i18nextInstance.init()
     // await i18nextInstance.loadNamespace('translation') // loaded via preload in init
     let translated = i18nextInstance.t('key')
