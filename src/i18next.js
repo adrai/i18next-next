@@ -92,16 +92,45 @@ class I18next extends EventEmitter {
     this.addHook('resolvePlural', (count, key, ns, lng, options) => `${key}_plural`)
     this.addHook('translate', (key, ns, lng, res, options) => res[lng][ns][key])
 
+    if (this.language && this.options.preload.indexOf(this.language) < 0) this.options.preload.unshift(this.language)
+
     this.isInitialized = true
     this.emit('initialized', this)
+
+    if (this.options.preload.length > 0) {
+      const toLoad = this.options.preload.reduce((prev, curr) => {
+        prev[curr] = [this.options.defaultNS]
+        return prev
+      }, {})
+      await this.load(toLoad)
+    }
+
     return this
   }
 
   async load (toLoad) {
-    // TODO: load from backend... if any...
+    this.throwIfNotInitializedFn('load')
+
+    for (const hook of this.readHooks) {
+      const ret = hook(toLoad)
+      const read = await (ret && ret.then ? ret : Promise.resolve(ret))
+      if (!read) continue
+      Object.keys(read).forEach((lng) => {
+        Object.keys(read[lng]).forEach((ns) => {
+          this.resources[lng] = this.resources[lng] || {}
+          this.resources[lng][ns] = read[lng][ns]
+        })
+      })
+      return
+    }
   }
 
   async loadNamespace (ns, lng) {
+    this.throwIfNotInitializedFn('loadNamespace')
+
+    if (!lng) lng = this.language
+    if (!lng) throw new Error('There is no language defined!')
+
     return this.load({
       [lng]: [ns]
     })

@@ -1,5 +1,6 @@
 import i18next from '../index.js'
 import should from 'should'
+import { promisify } from 'util'
 
 describe('i18next', () => {
   it('basic addHook stuff', async () => {
@@ -103,5 +104,70 @@ describe('i18next', () => {
     await i18nextInstance.init()
     const translated = i18nextInstance.t('key', { count: 3 })
     should(translated).eql('some values')
+  })
+
+  it('read (like backend connector)', async () => {
+    const i18nextInstance = i18next({ lng: 'en' })
+    i18nextInstance.addHook('read', (toLoad) => {
+      const res = {}
+      Object.keys(toLoad).forEach((lng) => {
+        toLoad[lng].forEach((ns) => {
+          res[lng] = res[lng] || {}
+          res[lng][ns] = {
+            key: `a value for ${lng}/${ns}`
+          }
+        })
+      })
+      return res
+    })
+    await i18nextInstance.init()
+    await i18nextInstance.loadNamespace('translation')
+    let translated = i18nextInstance.t('key')
+    should(translated).eql('a value for en/translation')
+    await i18nextInstance.loadNamespace('translation', 'de')
+    translated = i18nextInstance.t('key', { lng: 'de' })
+    should(translated).eql('a value for de/translation')
+  })
+
+  it('wrap old backend module', async () => {
+    const oldModule = {
+      type: 'backend',
+      read (lng, ns, callback) {
+        callback(null, {
+          key: `a value for ${lng}/${ns} from old backend`
+        })
+      }
+    }
+    const compatabilityLayer = (opt) => ({ // opt are module specific options... not anymore passed as backend options on global i18next options
+      register: (i18n) => {
+        i18n.addHook('read', async (toLoad) => {
+          const toRead = []
+          Object.keys(toLoad).forEach((lng) => {
+            toLoad[lng].forEach((ns) => {
+              toRead.push({ lng, ns })
+            })
+          })
+          const res = await Promise.all(toRead.map(async (entry) => {
+            const ret = await promisify(oldModule.read)(entry.lng, entry.ns)
+            return { lng: entry.lng, ns: entry.ns, resources: ret }
+          }))
+          return res.reduce((prev, curr) => {
+            prev[curr.lng] = prev[curr.lng] || {}
+            prev[curr.lng][curr.ns] = curr.resources
+            return prev
+          }, {})
+        })
+      }
+    })
+
+    const i18nextInstance = i18next({ lng: 'en' })
+    i18nextInstance.use(compatabilityLayer({ whatever: 'options' }))
+    await i18nextInstance.init()
+    // await i18nextInstance.loadNamespace('translation') // loaded via preload in init
+    let translated = i18nextInstance.t('key')
+    should(translated).eql('a value for en/translation from old backend')
+    await i18nextInstance.loadNamespace('translation', 'de')
+    translated = i18nextInstance.t('key', { lng: 'de' })
+    should(translated).eql('a value for de/translation from old backend')
   })
 })

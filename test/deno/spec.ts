@@ -31,7 +31,8 @@ test('onExtendOptions', async () => {
     pluralOptionProperty: 'count',
     debug: false,
     defaultNS: 'translation',
-    lng: 'en'
+    lng: 'en',
+    preload: ['en']
   })
   const translated = i18nextInstance.t('a key')
   assertEquals(translated, 'a value')

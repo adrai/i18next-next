@@ -2,7 +2,8 @@ export const hookNames = [
   'extendOptions',
   'loadResources',
   'resolvePlural',
-  'translate'
+  'translate',
+  'read'
 ]
 
 export const runHooks = async (hooks, args) => {
