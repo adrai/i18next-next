@@ -18,6 +18,7 @@ class I18next extends EventEmitter {
     this.options = { ...getDefaults(), ...options }
     this.language = this.options.lng
     this.services = {
+      logger: baseLogger,
       languageUtils: new LanguageUtils(this.options)
     }
   }
@@ -77,6 +78,13 @@ class I18next extends EventEmitter {
     }
   }
 
+  runBestMatchFromCodesHooks (lngs) {
+    for (const hook of this.bestMatchFromCodesHooks) {
+      const lng = hook(lngs)
+      if (lng !== undefined) return lng
+    }
+  }
+
   calculateSeenNamespaces () {
     const namespaces = []
     Object.keys(this.resources).forEach((lng) => {
@@ -120,6 +128,7 @@ class I18next extends EventEmitter {
 
     this.addHook('resolvePlural', (count, key, ns, lng, options) => `${key}_plural`)
     this.addHook('translate', (key, ns, lng, res, options) => res[lng][ns][key])
+    this.addHook('bestMatchFromCodes', (lngs) => this.services.languageUtils.getBestMatchFromCodes(lngs))
 
     if (this.language && this.options.preload.indexOf(this.language) < 0) this.options.preload.unshift(this.language)
 
@@ -182,10 +191,15 @@ class I18next extends EventEmitter {
     return this.resources[lng] && this.resources[lng][ns]
   }
 
+  dir (lng) {
+    if (!lng) lng = this.language
+    return this.services.languageUtils.dir(lng)
+  }
+
   async changeLanguage (lng) {
     if (!lng) lng = await this.runDetectLanguageHooks()
 
-    lng = typeof lng === 'string' ? lng : this.services.languageUtils.getBestMatchFromCodes(lng)
+    lng = typeof lng === 'string' ? lng : this.runBestMatchFromCodesHooks(lng)
     if (!lng) return
 
     this.emit('languageChanging', lng)

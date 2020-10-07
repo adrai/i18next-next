@@ -5,7 +5,8 @@ export const hookNames = [
   'translate',
   'read',
   'detectLanguage',
-  'cacheLanguage'
+  'cacheLanguage',
+  'bestMatchFromCodes'
 ]
 
 export const runHooks = async (hooks, args) => {

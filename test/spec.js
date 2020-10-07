@@ -201,7 +201,7 @@ describe('i18next', () => {
         })
         return res
       })
-      .addHook('detectLanguage', () => 'en')
+      .addHook('detectLanguage', () => ['en'])
       .addHook('cacheLanguage', (lng) => {
         cachedLanguages.push(lng)
       })
