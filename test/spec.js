@@ -130,8 +130,21 @@ describe('i18next', () => {
   })
 
   it('wrap old backend module', async () => {
-    const oldModule = {
-      type: 'backend',
+    class Backend {
+      constructor (services, options = {}, allOptions = {}) {
+        this.services = services
+        this.options = options
+        this.allOptions = allOptions
+        this.type = 'backend'
+        this.init(services, options, allOptions)
+      }
+
+      init (services, options = {}, allOptions = {}) {
+        this.services = services
+        this.options = options
+        this.allOptions = allOptions
+      }
+
       read (lng, ns, callback) {
         callback(null, {
           key: `a value for ${lng}/${ns} from old backend`
@@ -140,6 +153,7 @@ describe('i18next', () => {
     }
     const compatabilityLayer = (opt) => ({ // opt are module specific options... not anymore passed as backend options on global i18next options
       register: (i18n) => {
+        const oldModule = new Backend({ /* i18next.services, will also exist */ }, opt)
         i18n.addHook('read', async (toLoad) => {
           const toRead = []
           Object.keys(toLoad).forEach((lng) => {
