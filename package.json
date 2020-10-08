@@ -1,23 +1,23 @@
 {
-  "name": "i18next",
+  "name": "i18next-next",
   "version": "20.0.0",
   "description": "",
   "type": "module",
-  "main": "./dist/cjs/i18next.js",
-  "module": "./dist/esm/i18next.js",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
   "browser": "./dist/umd/i18next.js",
   "types": "./index.d.ts",
   "exports": {
     "./package.json": "./package.json",
     ".": {
-      "require": "./dist/cjs/i18next.js",
-      "default": "./dist/esm/i18next.js"
+      "require": "./dist/cjs/index.js",
+      "default": "./dist/esm/index.js"
     },
     "./cjs": {
-      "default": "./dist/cjs/i18next.js"
+      "default": "./dist/cjs/index.js"
     },
     "./esm": {
-      "default": "./dist/esm/i18next.js"
+      "default": "./dist/esm/index.js"
     }
   },
   "scripts": {
@@ -30,9 +30,10 @@
     "test": "npm run lint && mocha --colors --reporter spec --recursive test/*.js",
     "test:all": "npm run test && npm run test:typescript && npm run test:deno"
   },
-  "author": "",
   "license": "MIT",
-  "dependencies": {},
+  "dependencies": {
+    "@babel/runtime": "7.11.2"
+  },
   "devDependencies": {
     "@babel/core": "7.11.6",
     "@babel/plugin-transform-runtime": "7.11.5",
@@ -41,6 +42,7 @@
     "@typescript-eslint/eslint-plugin": "4.3.0",
     "@typescript-eslint/parser": "4.3.0",
     "babel-plugin-add-module-exports": "1.0.4",
+    "babel-plugin-transform-runtime-file-extensions": "2.0.0",
     "eslint": "7.10.0",
     "eslint-config-standard": "14.1.1",
     "eslint-plugin-import": "2.22.1",
