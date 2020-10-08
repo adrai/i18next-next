@@ -298,8 +298,7 @@ class I18next extends EventEmitter {
   isNamespaceLoaded (ns, lng) {
     this.throwIfNotInitializedFn('isNamespaceLoaded')
 
-    if (!lng) lng = this.language
-    if (!lng) throw new Error('There is no language defined!')
+    if (!lng) return this.seenNamespaces.indexOf(ns) > -1
     return this.resources[lng] && this.resources[lng][ns]
   }
 
@@ -327,13 +326,68 @@ class I18next extends EventEmitter {
     this.logger.log('languageChanged', lng)
   }
 
+  resolve (keys, options = {}) {
+    if (typeof keys === 'string') keys = [keys]
+    let found, usedKey, exactUsedKey, usedLng//, usedNS
+
+    const usedNS = options.ns
+
+    // forEach possible key
+    keys.forEach((key) => {
+      if (this.isValidLookup(found)) return
+
+      usedKey = key
+      const codes = this.runResolveHierarchyHooks(options.lng, options.fallbackLng)
+
+      if (!this.isNamespaceLoaded(usedNS)) {
+        this.logger.warn(
+          `key "${usedKey}" for languages "${codes.join(
+            ', '
+          )}" won't get resolved as namespace "${usedNS}" was not yet loaded`,
+          'This means something IS WRONG in your setup. You access the t function before i18next.init / i18next.loadNamespace / i18next.changeLanguage was done. Wait for the callback or Promise to resolve before accessing it!!!'
+        )
+      }
+
+      codes.forEach((code) => {
+        if (this.isValidLookup(found)) return
+
+        const finalKeys = [key]
+        exactUsedKey = finalKeys[finalKeys.length - 1]
+
+        if (options[this.options.pluralOptionProperty] !== undefined) {
+          const resolvedKey = this.runResolvePluralHooks(options[this.options.pluralOptionProperty], key, options.ns, code, options)
+          finalKeys.push(resolvedKey)
+        }
+
+        if (options[this.options.contextOptionProperty] !== undefined) {
+          const resolvedKey = this.runResolveContextHooks(options[this.options.contextOptionProperty], key, options.ns, code, options)
+          finalKeys.push(resolvedKey)
+        }
+
+        // iterate over finalKeys starting with most specific pluralkey (-> contextkey only) -> singularkey only
+        let possibleKey
+        while ((possibleKey = finalKeys.pop()) && !this.isValidLookup(found)) {
+          exactUsedKey = possibleKey
+          found = this.runTranslateHooks(possibleKey, options.ns, code, options)
+        }
+      })
+    })
+
+    return { res: found, usedKey, exactUsedKey, usedLng, usedNS }
+  }
+
+  exists (key, options = {}) {
+    const resolved = this.resolve(key, options)
+    return resolved && resolved.res !== undefined
+  }
+
   t (key, options = {}) {
     this.throwIfNotInitializedFn('t')
 
-    const lng = options.lng || this.language
+    const lng = options.lng = options.lng || this.language
     if (!lng) throw new Error('There is no language defined!')
 
-    const ns = options.ns || this.options.defaultNS
+    const ns = options.ns = options.ns || this.options.defaultNS
 
     if (!this.isLanguageLoaded(lng)) {
       this.logger.warn(`Language ${lng} not loaded!`)
@@ -344,41 +398,21 @@ class I18next extends EventEmitter {
       return undefined
     }
 
-    let found, lastKey
-    const codes = this.runResolveHierarchyHooks(lng, options.fallbackLng)
-    codes.forEach((code) => {
-      if (this.isValidLookup(found)) return
+    // resolve
+    const resolved = this.resolve(key, options)
+    let res = resolved && resolved.res
+    // const resUsedKey = (resolved && resolved.usedKey) || key
+    const resExactUsedKey = (resolved && resolved.exactUsedKey) || key
 
-      const finalKeys = [key]
-      lastKey = finalKeys[finalKeys.length - 1]
-
-      if (options[this.options.pluralOptionProperty] !== undefined) {
-        const resolvedKey = this.runResolvePluralHooks(options[this.options.pluralOptionProperty], key, ns, code, options)
-        finalKeys.push(resolvedKey)
-      }
-
-      if (options[this.options.contextOptionProperty] !== undefined) {
-        const resolvedKey = this.runResolveContextHooks(options[this.options.contextOptionProperty], key, ns, code, options)
-        finalKeys.push(resolvedKey)
-      }
-
-      // iterate over finalKeys starting with most specific pluralkey (-> contextkey only) -> singularkey only
-      let possibleKey
-      while ((possibleKey = finalKeys.pop()) && !this.isValidLookup(found)) {
-        lastKey = possibleKey
-        found = this.runTranslateHooks(possibleKey, ns, code, options)
-      }
-    })
-
-    if (found === undefined) this.logger.warn(`No value found for key ${lastKey} in namespace ${ns} for language ${lng}!`)
+    if (res === undefined) this.logger.warn(`No value found for key ${resExactUsedKey} in namespace ${ns} for language ${lng}!`)
 
     const postProcess = options.postProcess || this.options.postProcess
     const postProcessorNames = typeof postProcess === 'string' ? [postProcess] : postProcess
-    if (found !== undefined && postProcessorNames && postProcessorNames.length) {
-      found = this.runPostProcessHooks(postProcessorNames, found, lastKey, options)
+    if (res !== undefined && postProcessorNames && postProcessorNames.length) {
+      res = this.runPostProcessHooks(postProcessorNames, res, resExactUsedKey, options)
     }
 
-    return found
+    return res
   }
 }
 
