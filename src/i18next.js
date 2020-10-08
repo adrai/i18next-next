@@ -201,6 +201,27 @@ class I18next extends EventEmitter {
     }
   }
 
+  async loadLanguages (lngs) {
+    this.throwIfNotInitializedFn('loadLanguages')
+
+    if (typeof lngs === 'string') lngs = [lngs]
+    const newLngs = lngs.filter((lng) => this.options.preload.indexOf(lng) < 0)
+    // Exit early if all given languages are already preloaded
+    if (!newLngs.length) return
+
+    this.options.preload = this.options.preload.concat(newLngs)
+
+    const toLoad = this.options.preload.reduce((prev, curr) => {
+      prev[curr] = this.seenNamespaces
+      return prev
+    }, {})
+    return this.load(toLoad)
+  }
+
+  async loadLanguage (lng) {
+    return this.loadLanguages(lng)
+  }
+
   async loadNamespaces (ns, lng) {
     this.throwIfNotInitializedFn('loadNamespace')
     if (typeof ns === 'string') ns = [ns]
