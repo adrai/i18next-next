@@ -122,6 +122,18 @@ class I18next extends EventEmitter {
     return value
   }
 
+  runParseI18nFormatHooks (res, options, lng, ns, key, info) {
+    for (const hook of this.parseI18nFormatHooks) {
+      const parsed = hook(res, options, lng, ns, key, info)
+      if (parsed !== undefined) return parsed
+    }
+    return res
+  }
+
+  runAddI18nFormatLookupKeysHooks (finalKeys, key, code, ns, options) {
+    this.addI18nFormatLookupKeysHooks.forEach((hook) => hook(finalKeys, key, code, ns, options))
+  }
+
   cleanResources (res) {
     Object.keys(res).forEach((lng) => {
       Object.keys(res[lng]).forEach((ns) => {
@@ -204,7 +216,6 @@ class I18next extends EventEmitter {
     if (this.language && this.options.preload.indexOf(this.language) < 0) this.options.preload.unshift(this.language)
 
     this.isInitialized = true
-    this.emit('initialized', this)
 
     if (this.options.preload.length > 0) {
       const toLoad = this.options.preload.reduce((prev, curr) => {
@@ -215,6 +226,9 @@ class I18next extends EventEmitter {
     }
 
     await this.changeLanguage(this.language)
+
+    this.logger.log('initialized', this.options)
+    this.emit('initialized', this)
 
     return this
   }
@@ -327,6 +341,8 @@ class I18next extends EventEmitter {
   }
 
   resolve (keys, options = {}) {
+    this.throwIfNotInitializedFn('changeLanguage')
+
     if (typeof keys === 'string') keys = [keys]
     let found, usedKey, exactUsedKey, usedLng//, usedNS
 
@@ -353,6 +369,8 @@ class I18next extends EventEmitter {
 
         const finalKeys = [key]
         exactUsedKey = finalKeys[finalKeys.length - 1]
+
+        this.runAddI18nFormatLookupKeysHooks(finalKeys, key, code, options.ns, options)
 
         if (options[this.options.pluralOptionProperty] !== undefined) {
           const resolvedKey = this.runResolvePluralHooks(options[this.options.pluralOptionProperty], key, options.ns, code, options)
@@ -405,6 +423,17 @@ class I18next extends EventEmitter {
     const resExactUsedKey = (resolved && resolved.exactUsedKey) || key
 
     if (res === undefined) this.logger.warn(`No value found for key ${resExactUsedKey} in namespace ${ns} for language ${lng}!`)
+
+    // extend
+
+    res = this.runParseI18nFormatHooks(
+      res,
+      options,
+      resolved.usedLng,
+      resolved.usedNS,
+      resolved.usedKey,
+      { resolved }
+    )
 
     const postProcess = options.postProcess || this.options.postProcess
     const postProcessorNames = typeof postProcess === 'string' ? [postProcess] : postProcess

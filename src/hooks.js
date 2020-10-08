@@ -10,7 +10,9 @@ export const hookNames = [
   'bestMatchFromCodes',
   'fallbackCodes',
   'resolveHierarchy',
-  'postProcess'
+  'postProcess',
+  'parseI18nFormat',
+  'addI18nFormatLookupKeys'
 ]
 
 export const runHooks = async (hooks, args) => {

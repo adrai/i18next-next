@@ -8,7 +8,7 @@ export function compatibilityLayer (m, opt = {}) {
   const module = createClassOnDemand(m)
   return { // opt are module specific options... not anymore passed as module options on global i18next options
     register: (i18n) => {
-      if (module.init) module.init(i18n.services, opt, i18n.options)
+      if (module.init && module.type !== '3rdParty') module.init(i18n.services, opt, i18n.options)
       if (module.type === 'backend') {
         const read = (lng, ns) => new Promise((resolve, reject) => module.read(lng, ns, (err, ret) => err ? reject(err) : resolve(ret)))
         i18n.addHook('read', async (toLoad) => {
@@ -45,6 +45,14 @@ export function compatibilityLayer (m, opt = {}) {
           // exists: // TODO
           translate: i18n.t.bind(i18n)
         }))
+      }
+      if (module.type === 'i18nFormat') {
+        if (module.parse) i18n.addHook('parseI18nFormat', (res, options, lng, ns, key, info) => module.parse(res, options, lng, ns, key, info))
+        if (module.addLookupKeys) i18n.addHook('addI18nFormatLookupKeys', (finalKeys, key, code, ns, options) => module.addLookupKeys(finalKeys, key, code, ns, options))
+        if (module.getResource) this.addHook('translate', (key, ns, lng, res, options) => module.getResource(lng, ns, key, options))
+      }
+      if (module.type === '3rdParty') {
+        i18n.on('initialized', () => module.init(i18n))
       }
     }
   }
