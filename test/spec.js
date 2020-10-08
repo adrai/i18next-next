@@ -1,6 +1,6 @@
 import i18next from '../index.js'
 import should from 'should'
-import { promisify } from 'util'
+import { compatibilityLayer } from './helpers/compatibilityLayer.js'
 
 describe('i18next', () => {
   it('basic addHook stuff', async () => {
@@ -151,31 +151,8 @@ describe('i18next', () => {
         })
       }
     }
-    const compatibilityLayer = (opt) => ({ // opt are module specific options... not anymore passed as backend options on global i18next options
-      register: (i18n) => {
-        const oldModule = new Backend(i18n.services, opt)
-        i18n.addHook('read', async (toLoad) => {
-          const toRead = []
-          Object.keys(toLoad).forEach((lng) => {
-            toLoad[lng].forEach((ns) => {
-              toRead.push({ lng, ns })
-            })
-          })
-          const res = await Promise.all(toRead.map(async (entry) => {
-            const ret = await promisify(oldModule.read)(entry.lng, entry.ns)
-            return { lng: entry.lng, ns: entry.ns, resources: ret }
-          }))
-          return res.reduce((prev, curr) => {
-            prev[curr.lng] = prev[curr.lng] || {}
-            prev[curr.lng][curr.ns] = curr.resources
-            return prev
-          }, {})
-        })
-      }
-    })
-
     const i18nextInstance = i18next({ lng: 'en' })
-    i18nextInstance.use(compatibilityLayer({ whatever: 'options' }))
+    i18nextInstance.use(compatibilityLayer(Backend, { onlyBackend: 'options' }))
     await i18nextInstance.init()
     // await i18nextInstance.loadNamespace('translation') // loaded via preload in init
     let translated = i18nextInstance.t('key')
@@ -187,6 +164,29 @@ describe('i18next', () => {
 
   it('changeLanguage and languageDetector', async () => {
     const cachedLanguages = []
+    class LanguageDetector {
+      constructor (services, options = {}, allOptions = {}) {
+        this.services = services
+        this.options = options
+        this.allOptions = allOptions
+        this.type = 'languageDetector'
+        this.init(services, options, allOptions)
+      }
+
+      init (services, options = {}, allOptions = {}) {
+        this.services = services
+        this.options = options
+        this.allOptions = allOptions
+      }
+
+      detect () {
+        return ['en']
+      }
+
+      cacheUserLanguage (lng) {
+        cachedLanguages.push(lng)
+      }
+    }
     const i18nextInstance = i18next()
     i18nextInstance
       .addHook('read', (toLoad) => {
@@ -201,10 +201,7 @@ describe('i18next', () => {
         })
         return res
       })
-      .addHook('detectLanguage', () => ['en'])
-      .addHook('cacheLanguage', (lng) => {
-        cachedLanguages.push(lng)
-      })
+      .use(compatibilityLayer(LanguageDetector))
 
     await i18nextInstance.init()
     let translated = i18nextInstance.t('key')
