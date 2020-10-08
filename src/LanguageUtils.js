@@ -1,5 +1,3 @@
-// this is more or less just copied => needs probably to be refactored, i.e. to allow custom language code formats
-
 import baseLogger from './logger.js'
 
 const capitalize = (string) => string.charAt(0).toUpperCase() + string.slice(1)
@@ -93,59 +91,56 @@ class LanguageUtil {
     }
 
     // if nothing found, use fallbackLng
-    // if (!found) found = this.getFallbackCodes(this.options.fallbackLng)[0]
+    if (!found) found = this.getFallbackCodes(this.options.fallbackLng)[0]
 
     return found
   }
 
-  // getFallbackCodes (fallbacks, code) {
-  //   if (!fallbacks) return []
-  //   if (typeof fallbacks === 'function') fallbacks = fallbacks(code)
-  //   if (typeof fallbacks === 'string') fallbacks = [fallbacks]
-  //   if (Object.prototype.toString.apply(fallbacks) === '[object Array]') return fallbacks
+  getFallbackCodes (fallbacks, code) {
+    if (!fallbacks) return []
+    if (typeof fallbacks === 'function') fallbacks = fallbacks(code)
+    if (typeof fallbacks === 'string') fallbacks = [fallbacks]
+    if (Object.prototype.toString.apply(fallbacks) === '[object Array]') return fallbacks
 
-  //   if (!code) return fallbacks.default || []
+    if (!code) return fallbacks.default || []
 
-  //   // asume we have an object defining fallbacks
-  //   let found = fallbacks[code]
-  //   if (!found) found = fallbacks[this.getScriptPartFromCode(code)]
-  //   if (!found) found = fallbacks[this.formatLanguageCode(code)]
-  //   if (!found) found = fallbacks[this.getLanguagePartFromCode(code)]
-  //   if (!found) found = fallbacks.default
+    // asume we have an object defining fallbacks
+    let found = fallbacks[code]
+    if (!found) found = fallbacks[this.getScriptPartFromCode(code)]
+    if (!found) found = fallbacks[this.formatLanguageCode(code)]
+    if (!found) found = fallbacks[this.getLanguagePartFromCode(code)]
+    if (!found) found = fallbacks.default
 
-  //   return found || []
-  // }
+    return found || []
+  }
 
-  // toResolveHierarchy (code, fallbackCode) {
-  //   const fallbackCodes = this.getFallbackCodes(
-  //     fallbackCode || this.options.fallbackLng || [],
-  //     code
-  //   )
+  toResolveHierarchy (code, fallbackCode) {
+    const fallbackCodes = this.getFallbackCodes(fallbackCode || this.options.fallbackLng || [], code)
 
-  //   const codes = []
-  //   const addCode = (c) => {
-  //     if (!c) return
-  //     if (this.isSupportedCode(c)) {
-  //       codes.push(c)
-  //     } else {
-  //       this.logger.warn(`rejecting language code not found in supportedLngs: ${c}`)
-  //     }
-  //   }
+    const codes = []
+    const addCode = (c) => {
+      if (!c) return
+      if (this.isSupportedCode(c)) {
+        codes.push(c)
+      } else {
+        this.logger.warn(`rejecting language code not found in supportedLngs: ${c}`)
+      }
+    }
 
-  //   if (typeof code === 'string' && code.indexOf('-') > -1) {
-  //     if (this.options.load !== 'languageOnly') addCode(this.formatLanguageCode(code))
-  //     if (this.options.load !== 'languageOnly' && this.options.load !== 'currentOnly') addCode(this.getScriptPartFromCode(code))
-  //     if (this.options.load !== 'currentOnly') addCode(this.getLanguagePartFromCode(code))
-  //   } else if (typeof code === 'string') {
-  //     addCode(this.formatLanguageCode(code))
-  //   }
+    if (typeof code === 'string' && code.indexOf('-') > -1) {
+      if (this.options.load !== 'languageOnly') addCode(this.formatLanguageCode(code))
+      if (this.options.load !== 'languageOnly' && this.options.load !== 'currentOnly') addCode(this.getScriptPartFromCode(code))
+      if (this.options.load !== 'currentOnly') addCode(this.getLanguagePartFromCode(code))
+    } else if (typeof code === 'string') {
+      addCode(this.formatLanguageCode(code))
+    }
 
-  //   fallbackCodes.forEach(fc => {
-  //     if (codes.indexOf(fc) < 0) addCode(this.formatLanguageCode(fc))
-  //   })
+    fallbackCodes.forEach(fc => {
+      if (codes.indexOf(fc) < 0) addCode(this.formatLanguageCode(fc))
+    })
 
-  //   return codes
-  // }
+    return codes
+  }
 
   dir (lng) {
     if (!lng) return 'rtl'

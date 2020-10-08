@@ -1,7 +1,7 @@
 import baseLogger from './logger.js'
 import { getDefaults } from './defaults.js'
 import { hookNames, runHooks } from './hooks.js'
-import { isIE10, flatten } from './utils.js'
+import { isIE10, flatten, createClassOnDemand } from './utils.js'
 import EventEmitter from './EventEmitter.js'
 import LanguageUtils from './LanguageUtils.js'
 
@@ -9,7 +9,6 @@ class I18next extends EventEmitter {
   constructor (options = {}) {
     super()
     if (isIE10) EventEmitter.call(this) // <=IE10 fix (unable to call parent constructor)
-    this.logger = baseLogger
     this.isInitialized = false
     hookNames.forEach((name) => {
       this[`${name}Hooks`] = []
@@ -18,9 +17,10 @@ class I18next extends EventEmitter {
     this.seenNamespaces = []
     this.options = { ...getDefaults(), ...options }
     this.language = this.options.lng
+    this.languageUtils = new LanguageUtils(this.options)
+    if (this.language) this.languages = this.languageUtils.toResolveHierarchy(this.language)
     this.services = {
-      logger: baseLogger,
-      languageUtils: new LanguageUtils(this.options)
+      languageUtils: this.languageUtils
     }
   }
 
@@ -86,6 +86,20 @@ class I18next extends EventEmitter {
     }
   }
 
+  runFallbackCodesHooks (lng) {
+    for (const hook of this.fallbackCodesHooks) {
+      const fallbacks = hook(lng)
+      if (fallbacks !== undefined) return fallbacks
+    }
+  }
+
+  runResolveHierarchyHooks (lng) {
+    for (const hook of this.resolveHierarchyHooks) {
+      const hir = hook(lng)
+      if (hir !== undefined) return hir
+    }
+  }
+
   cleanResources (res) {
     Object.keys(res).forEach((lng) => {
       Object.keys(res[lng]).forEach((ns) => {
@@ -102,6 +116,10 @@ class I18next extends EventEmitter {
 
   use (module) {
     if (!module) throw new Error('You are passing an undefined module! Please check the object you are passing to i18next.use()')
+    if (module.type === 'logger' || (module.log && module.warn && module.error)) {
+      this.services.logger = this.logger
+      return this
+    }
     if (module.type) throw new Error('You are probably passing an old module! Please check the object you are passing to i18next.use()')
     if (typeof module.register !== 'function') throw new Error('You are passing a wrong module! Please check the object you are passing to i18next.use()')
 
@@ -123,12 +141,27 @@ class I18next extends EventEmitter {
     await this.runExtendOptionsHooks()
     this.language = this.options.lng
 
+    baseLogger.init(this.services.logger ? createClassOnDemand(this.services.logger) : null, this.options)
+    this.logger = baseLogger
+    this.services.logger = this.logger
+
     this.resources = await this.runLoadResourcesHooks()
     this.cleanResources(this.resources)
 
     this.addHook('resolvePlural', (count, key, ns, lng, options) => `${key}_plural`)
     this.addHook('translate', (key, ns, lng, res, options) => res[lng][ns][key])
-    this.addHook('bestMatchFromCodes', (lngs) => this.services.languageUtils.getBestMatchFromCodes(lngs))
+    this.addHook('bestMatchFromCodes', (lngs) => this.languageUtils.getBestMatchFromCodes(lngs))
+    this.addHook('fallbackCodes', (lng) => this.languageUtils.getFallbackCodes(lng))
+    this.addHook('resolveHierarchy', (lng) => this.languageUtils.toResolveHierarchy(lng))
+
+    this.services.languageUtils = {
+      ...this.services.languageUtils,
+      getBestMatchFromCodes: this.runBestMatchFromCodesHooks.bind(this),
+      getFallbackCodes: this.runFallbackCodesHooks.bind(this),
+      toResolveHierarchy: this.runResolveHierarchyHooks.bind(this)
+    }
+
+    if (this.language) this.languages = this.runResolveHierarchyHooks(this.language)
 
     if (this.language && this.options.preload.indexOf(this.language) < 0) this.options.preload.unshift(this.language)
 
@@ -160,21 +193,41 @@ class I18next extends EventEmitter {
         Object.keys(read[lng]).forEach((ns) => {
           this.resources[lng] = this.resources[lng] || {}
           this.resources[lng][ns] = read[lng][ns]
+          this.logger.log(`loaded namespace ${ns} for language ${lng}`, read[lng][ns])
         })
       })
+      this.emit('loaded', toLoad)
       return
     }
   }
 
-  async loadNamespace (ns, lng) {
+  async loadNamespaces (ns, lng) {
     this.throwIfNotInitializedFn('loadNamespace')
+    if (typeof ns === 'string') ns = [ns]
 
     if (!lng) lng = this.language
-    if (!lng) throw new Error('There is no language defined!')
+    if (lng) {
+      const toLoad = {
+        [lng]: ns
+      }
+      const lngs = this.runResolveHierarchyHooks(lng)
+      lngs.forEach(l => {
+        if (!toLoad[l]) toLoad[l] = ns
+      })
+      return this.load(toLoad)
+    }
 
-    return this.load({
-      [lng]: [ns]
-    })
+    // at least load fallbacks in this case
+    const fallbacks = this.runFallbackCodesHooks(this.options.fallbackLng)
+    if (fallbacks.length === 0) throw new Error('There is no language defined!')
+    return fallbacks.reduce((prev, curr) => {
+      prev[curr] = ns
+      return prev
+    }, {})
+  }
+
+  async loadNamespace (ns, lng) {
+    return this.loadNamespaces(ns, lng)
   }
 
   isLanguageLoaded (lng) {
@@ -193,7 +246,7 @@ class I18next extends EventEmitter {
 
   dir (lng) {
     if (!lng) lng = this.language
-    return this.services.languageUtils.dir(lng)
+    return this.languageUtils.dir(lng)
   }
 
   async changeLanguage (lng) {
@@ -208,6 +261,7 @@ class I18next extends EventEmitter {
       [lng]: this.seenNamespaces
     })
     this.language = lng
+    this.languages = this.runResolveHierarchyHooks(this.language)
     await this.runCacheLanguageHooks(this.language)
 
     this.emit('languageChanged', lng)
