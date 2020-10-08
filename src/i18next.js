@@ -72,6 +72,13 @@ class I18next extends EventEmitter {
     }
   }
 
+  runResolveContextHooks (context, key, ns, lng, options) {
+    for (const hook of this.resolveContextHooks) {
+      const resolvedKey = hook(context, key, ns, lng, options)
+      if (resolvedKey !== undefined) return resolvedKey
+    }
+  }
+
   runTranslateHooks (key, ns, lng, options) {
     for (const hook of this.translateHooks) {
       const resolvedValue = hook(key, ns, lng, this.resources, options)
@@ -108,6 +115,14 @@ class I18next extends EventEmitter {
       })
     })
     if (this.seenNamespaces.indexOf(this.options.defaultNS) < 0) this.seenNamespaces.push(this.options.defaultNS)
+  }
+
+  isValidLookup (res) {
+    return (
+      res !== undefined &&
+      !(!this.options.returnNull && res === null) &&
+      !(!this.options.returnEmptyString && res === '')
+    )
   }
 
   /**
@@ -148,7 +163,7 @@ class I18next extends EventEmitter {
     this.resources = await this.runLoadResourcesHooks()
     this.cleanResources(this.resources)
 
-    this.addHook('resolvePlural', (count, key, ns, lng, options) => `${key}_plural`)
+    this.addHook('resolvePlural', (count, key, ns, lng, options) => `${key}_${new Intl.PluralRules(lng, { type: options.ordinal ? 'ordinal' : 'cardinal' }).select(count)}`)
     this.addHook('translate', (key, ns, lng, res, options) => res[lng][ns][key])
     this.addHook('bestMatchFromCodes', (lngs) => this.languageUtils.getBestMatchFromCodes(lngs))
     this.addHook('fallbackCodes', (lng) => this.languageUtils.getFallbackCodes(lng))
@@ -306,11 +321,26 @@ class I18next extends EventEmitter {
       return undefined
     }
 
+    const finalKeys = [key]
     if (options[this.options.pluralOptionProperty] !== undefined) {
       const resolvedKey = this.runResolvePluralHooks(options[this.options.pluralOptionProperty], key, ns, lng, options)
-      return this.runTranslateHooks(resolvedKey, ns, lng, options)
+      finalKeys.push(resolvedKey)
     }
-    return this.runTranslateHooks(key, ns, lng, options)
+
+    if (options[this.options.contextOptionProperty] !== undefined) {
+      const resolvedKey = this.runResolveContextHooks(options[this.options.contextOptionProperty], key, ns, lng, options)
+      finalKeys.push(resolvedKey)
+    }
+
+    // iterate over finalKeys starting with most specific pluralkey (-> contextkey only) -> singularkey only
+    let possibleKey, found
+    let lastKey = finalKeys[finalKeys.length - 1]
+    while ((possibleKey = finalKeys.pop()) && !this.isValidLookup(found)) {
+      lastKey = possibleKey
+      found = this.runTranslateHooks(possibleKey, ns, lng, options)
+    }
+    if (found === undefined) this.logger.warn(`No value found for key ${lastKey} in namespace ${ns} for language ${lng}!`)
+    return found
   }
 }
 

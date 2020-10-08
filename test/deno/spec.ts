@@ -29,6 +29,7 @@ test('onExtendOptions', async () => {
     add: 'this',
     another: 'thing',
     pluralOptionProperty: 'count',
+    contextOptionProperty: 'context',
     debug: false,
     defaultNS: 'translation',
     lng: 'en',
