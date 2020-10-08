@@ -211,7 +211,7 @@ class I18next extends EventEmitter {
 
     this.options.preload = this.options.preload.concat(newLngs)
 
-    const toLoad = this.options.preload.reduce((prev, curr) => {
+    const toLoad = newLngs.reduce((prev, curr) => {
       prev[curr] = this.seenNamespaces
       return prev
     }, {})
