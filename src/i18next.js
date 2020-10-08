@@ -1,7 +1,7 @@
 import baseLogger from './logger.js'
 import { getDefaults } from './defaults.js'
 import { hookNames, runHooks } from './hooks.js'
-import { isIE10 } from './utils.js'
+import { isIE10, flatten } from './utils.js'
 import EventEmitter from './EventEmitter.js'
 import LanguageUtils from './LanguageUtils.js'
 
@@ -15,6 +15,7 @@ class I18next extends EventEmitter {
       this[`${name}Hooks`] = []
     })
     this.resources = {}
+    this.seenNamespaces = []
     this.options = { ...getDefaults(), ...options }
     this.language = this.options.lng
     this.services = {
@@ -85,15 +86,14 @@ class I18next extends EventEmitter {
     }
   }
 
-  calculateSeenNamespaces () {
-    const namespaces = []
-    Object.keys(this.resources).forEach((lng) => {
-      Object.keys(this.resources[lng]).forEach((ns) => {
-        if (namespaces.indexOf(ns) < 0) namespaces.push(ns)
+  cleanResources (res) {
+    Object.keys(res).forEach((lng) => {
+      Object.keys(res[lng]).forEach((ns) => {
+        if (this.seenNamespaces.indexOf(ns) < 0) this.seenNamespaces.push(ns)
+        res[lng][ns] = flatten(res[lng][ns])
       })
     })
-    if (namespaces.indexOf(this.options.defaultNS) < 0) namespaces.push(this.options.defaultNS)
-    this.seenNamespaces = namespaces
+    if (this.seenNamespaces.indexOf(this.options.defaultNS) < 0) this.seenNamespaces.push(this.options.defaultNS)
   }
 
   /**
@@ -124,7 +124,7 @@ class I18next extends EventEmitter {
     this.language = this.options.lng
 
     this.resources = await this.runLoadResourcesHooks()
-    this.calculateSeenNamespaces()
+    this.cleanResources(this.resources)
 
     this.addHook('resolvePlural', (count, key, ns, lng, options) => `${key}_plural`)
     this.addHook('translate', (key, ns, lng, res, options) => res[lng][ns][key])
@@ -155,13 +155,13 @@ class I18next extends EventEmitter {
       const ret = hook(toLoad)
       const read = await (ret && ret.then ? ret : Promise.resolve(ret))
       if (!read) continue
+      this.cleanResources(read)
       Object.keys(read).forEach((lng) => {
         Object.keys(read[lng]).forEach((ns) => {
           this.resources[lng] = this.resources[lng] || {}
           this.resources[lng][ns] = read[lng][ns]
         })
       })
-      this.calculateSeenNamespaces()
       return
     }
   }
