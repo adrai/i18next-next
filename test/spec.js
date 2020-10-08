@@ -270,4 +270,27 @@ describe('i18next', () => {
     const translated = i18nextInstance.t('key', { postProcess: 'my-post-processor', count: 2 })
     should(translated).eql('a few items')
   })
+
+  it('fallback language', async () => {
+    const i18nextInstance = i18next({ lng: 'en' })
+    i18nextInstance.addHook('loadResources', () => ({
+      en: {
+        translation: {
+          key: 'a value for en/translation'
+        }
+      },
+      'en-GB': {
+        translation: {
+          other: 'thing'
+        }
+      }
+    }))
+    await i18nextInstance.init()
+    // await i18nextInstance.loadNamespace('translation') // loaded via preload in init
+    let translated = i18nextInstance.t('key')
+    should(translated).eql('a value for en/translation')
+    await i18nextInstance.loadNamespace('translation', 'en-GB')
+    translated = i18nextInstance.t('key', { lng: 'en-GB' })
+    should(translated).eql('a value for en/translation')
+  })
 })
