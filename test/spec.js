@@ -1,6 +1,7 @@
 import i18next from '../index.js'
 import should from 'should'
 import { compatibilityLayer } from './helpers/compatibilityLayer.js'
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 describe('i18next', () => {
   it('basic addHook stuff', async () => {
@@ -55,10 +56,10 @@ describe('i18next', () => {
           }
         }
       }))
-      .addHook('resolvePlural', (count, key, ns, lng) => {
+      .addHook('resolvePlural', (count, key, lng) => {
         if (count < 4) return `${key}_${count}`
       })
-      .addHook('resolvePlural', (count, key, ns, lng) => `${count * 2}_${key}`)
+      .addHook('resolvePlural', (count, key, lng) => `${count * 2}_${key}`)
     await i18nextInstance.init()
     let translated = i18nextInstance.t('key', { count: 3 })
     should(translated).eql('3 values')
@@ -289,8 +290,40 @@ describe('i18next', () => {
     // await i18nextInstance.loadNamespace('translation') // loaded via preload in init
     let translated = i18nextInstance.t('key')
     should(translated).eql('a value for en/translation')
-    await i18nextInstance.loadNamespace('translation', 'en-GB')
     translated = i18nextInstance.t('key', { lng: 'en-GB' })
     should(translated).eql('a value for en/translation')
+  })
+
+  it('save missing', async () => {
+    const i18nextInstance = i18next({ lng: 'en', saveMissing: true })
+    i18nextInstance.addHook('loadResources', () => ({
+      en: {
+        translation: {
+          key: 'a value for en/translation'
+        }
+      },
+      de: {
+        translation: {
+          other: 'stuff'
+        }
+      }
+    }))
+
+    const missings = []
+    i18nextInstance.addHook('handleMissingKey', (key, ns, lng, value, options) => {
+      missings.push({ key, ns, lng, value, options })
+    })
+    await i18nextInstance.init()
+    // await i18nextInstance.loadNamespace('translation') // loaded via preload in init
+    let translated = i18nextInstance.t('key')
+    should(translated).eql('a value for en/translation')
+    translated = i18nextInstance.t('key', { lng: 'de', defaultValue: 'a value for de/translation' })
+    should(translated).eql('a value for de/translation')
+    await wait(20)
+    should(missings).have.a.lengthOf(1)
+    should(missings[0].key).eql('key')
+    should(missings[0].ns).eql('translation')
+    should(missings[0].lng).eql(['de'])
+    should(missings[0].value).eql('a value for de/translation')
   })
 })

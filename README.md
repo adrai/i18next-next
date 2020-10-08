@@ -26,7 +26,7 @@ i18n.addHook('loadResources', () => ({
   }
 }))
 
-i18n.addHook('resolvePlural', (count, key, ns, lng, options) => `${key}_${count}`)
+i18n.addHook('resolvePlural', (count, key, lng, options) => `${key}_${count}`)
 
 i18n.addHook('translate', (key, ns, lng, res, options) => res[lng][ns][key])
 

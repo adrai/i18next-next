@@ -69,16 +69,31 @@ class I18next extends EventEmitter {
     return runHooks(this.cacheLanguageHooks, [lng])
   }
 
-  runResolvePluralHooks (count, key, ns, lng, options) {
+  async runHandleMissingKeyHooks (key, ns, lng, value, options) {
+    return runHooks(this.handleMissingKeyHooks, [key, ns, lng, value, options])
+  }
+
+  async runHandleUpdateKeyHooks (key, ns, lng, value, options) {
+    return runHooks(this.handleUpdateKeyHooks, [key, ns, lng, value, options])
+  }
+
+  runResolvePluralHooks (count, key, lng, options) {
     for (const hook of this.resolvePluralHooks) {
-      const resolvedKey = hook(count, key, ns, lng, options)
+      const resolvedKey = hook(count, key, lng, options)
       if (resolvedKey !== undefined) return resolvedKey
     }
   }
 
-  runResolveContextHooks (context, key, ns, lng, options) {
+  runFormPluralsHooks (key, lng, options) {
+    for (const hook of this.formPluralsHooks) {
+      const resolvedKeys = hook(key, lng, options)
+      if (resolvedKeys !== undefined && resolvedKeys.length) return resolvedKeys
+    }
+  }
+
+  runResolveContextHooks (context, key, options) {
     for (const hook of this.resolveContextHooks) {
-      const resolvedKey = hook(context, key, ns, lng, options)
+      const resolvedKey = hook(context, key, options)
       if (resolvedKey !== undefined) return resolvedKey
     }
   }
@@ -198,7 +213,12 @@ class I18next extends EventEmitter {
     this.resources = await this.runLoadResourcesHooks()
     this.cleanResources(this.resources)
 
-    this.addHook('resolvePlural', (count, key, ns, lng, options) => `${key}_${new Intl.PluralRules(lng, { type: options.ordinal ? 'ordinal' : 'cardinal' }).select(count)}`)
+    this.addHook('resolvePlural', (count, key, lng, options) => `${key}${this.options.pluralSeparator}${new Intl.PluralRules(lng, { type: options.ordinal ? 'ordinal' : 'cardinal' }).select(count)}`)
+    this.addHook('formPlurals', (key, lng, options) => {
+      const pr = new Intl.PluralRules(lng, { type: options.ordinal ? 'ordinal' : 'cardinal' })
+      return pr.resolvedOptions().pluralCategories.map((form) => `${key}${this.options.pluralSeparator}${form}`)
+    })
+    this.addHook('resolveContext', (context, key, options) => `${key}${this.options.contextSeparator}${context}`)
     this.addHook('translate', (key, ns, lng, res, options) => res[lng][ns][key])
     this.addHook('bestMatchFromCodes', (lngs) => this.languageUtils.getBestMatchFromCodes(lngs))
     this.addHook('fallbackCodes', (fallbackLng, lng) => this.languageUtils.getFallbackCodes(fallbackLng, lng))
@@ -373,12 +393,12 @@ class I18next extends EventEmitter {
         this.runAddI18nFormatLookupKeysHooks(finalKeys, key, code, options.ns, options)
 
         if (options[this.options.pluralOptionProperty] !== undefined) {
-          const resolvedKey = this.runResolvePluralHooks(options[this.options.pluralOptionProperty], key, options.ns, code, options)
+          const resolvedKey = this.runResolvePluralHooks(options[this.options.pluralOptionProperty], key, code, options)
           finalKeys.push(resolvedKey)
         }
 
         if (options[this.options.contextOptionProperty] !== undefined) {
-          const resolvedKey = this.runResolveContextHooks(options[this.options.contextOptionProperty], key, options.ns, code, options)
+          const resolvedKey = this.runResolveContextHooks(options[this.options.contextOptionProperty], key, options)
           finalKeys.push(resolvedKey)
         }
 
@@ -422,23 +442,84 @@ class I18next extends EventEmitter {
     // const resUsedKey = (resolved && resolved.usedKey) || key
     const resExactUsedKey = (resolved && resolved.exactUsedKey) || key
 
-    if (res === undefined) this.logger.warn(`No value found for key ${resExactUsedKey} in namespace ${ns} for language ${lng}!`)
+    if (res === undefined) {
+      this.logger.warn(`No value found for key ${resExactUsedKey} in namespace ${ns} for language ${lng}!`)
+
+      // string, empty or null
+      let usedDefault = false
+      let usedKey = false
+
+      // fallback value
+      if (!this.isValidLookup(res) && options.defaultValue !== undefined) {
+        usedDefault = true
+        if (!res) res = options.defaultValue
+      }
+
+      if (!this.isValidLookup(res)) {
+        usedKey = true
+        res = key
+      }
+
+      // save missing
+      const updateMissing = options.defaultValue && options.defaultValue !== res && this.options.updateMissing
+      if (usedKey || usedDefault || updateMissing) {
+        this.logger.log(
+          updateMissing ? 'updateKey' : 'missingKey',
+          lng,
+          options.ns,
+          key,
+          updateMissing ? options.defaultValue : res
+        )
+
+        let lngs = []
+        const fallbackLngs = this.runFallbackCodesHooks(this.options.fallbackLng, lng)
+        if (this.options.saveMissingTo === 'fallback' && fallbackLngs && fallbackLngs[0]) {
+          for (let i = 0; i < fallbackLngs.length; i++) lngs.push(fallbackLngs[i])
+        } else if (this.options.saveMissingTo === 'all') {
+          lngs = this.runResolveHierarchyHooks(lng)
+        } else {
+          lngs.push(lng)
+        }
+
+        if (this.options.saveMissing) {
+          const send = async (l, k) => {
+            if (updateMissing) {
+              await this.runHandleUpdateKeyHooks(k, options.ns, l, res, options)
+            } else {
+              await this.runHandleMissingKeyHooks(k, options.ns, l, options.defaultValue, options)
+            }
+            this.emit('missingKey', l, options.ns, k, res)
+          }
+
+          const needsPluralHandling = options[this.options.pluralOptionProperty] !== undefined && typeof options[this.options.pluralOptionProperty] !== 'string'
+          if (this.options.saveMissingPlurals && needsPluralHandling) {
+            lngs.forEach((l) => {
+              const plurals = this.runFormPluralsHooks(key, l, options)
+              plurals.forEach(p => send([l], p))
+            })
+          } else {
+            send(lngs, key)
+          }
+        }
+      }
+    }
 
     // extend
+    if (res !== undefined) {
+      res = this.runParseI18nFormatHooks(
+        res,
+        options,
+        resolved.usedLng,
+        resolved.usedNS,
+        resolved.usedKey,
+        { resolved }
+      )
 
-    res = this.runParseI18nFormatHooks(
-      res,
-      options,
-      resolved.usedLng,
-      resolved.usedNS,
-      resolved.usedKey,
-      { resolved }
-    )
-
-    const postProcess = options.postProcess || this.options.postProcess
-    const postProcessorNames = typeof postProcess === 'string' ? [postProcess] : postProcess
-    if (res !== undefined && postProcessorNames && postProcessorNames.length) {
-      res = this.runPostProcessHooks(postProcessorNames, res, resExactUsedKey, options)
+      const postProcess = options.postProcess || this.options.postProcess
+      const postProcessorNames = typeof postProcess === 'string' ? [postProcess] : postProcess
+      if (res !== undefined && postProcessorNames && postProcessorNames.length) {
+        res = this.runPostProcessHooks(postProcessorNames, res, resExactUsedKey, options)
+      }
     }
 
     return res

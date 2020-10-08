@@ -24,17 +24,10 @@ test('onExtendOptions', async () => {
     }
   }))
   await i18nextInstance.init()
-  assertEquals(i18nextInstance.options, {
-    some: 'options',
-    add: 'this',
-    another: 'thing',
-    pluralOptionProperty: 'count',
-    contextOptionProperty: 'context',
-    debug: false,
-    defaultNS: 'translation',
-    lng: 'en',
-    preload: ['en']
-  })
+  assertEquals(i18nextInstance.options.some, 'options')
+  assertEquals(i18nextInstance.options.add, 'this')
+  assertEquals(i18nextInstance.options.another, 'thing')
+  assertEquals(i18nextInstance.options.debug, false)
   const translated = i18nextInstance.t('a key')
   assertEquals(translated, 'a value')
 })

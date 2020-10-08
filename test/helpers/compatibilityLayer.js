@@ -28,6 +28,11 @@ export function compatibilityLayer (m, opt = {}) {
             return prev
           }, {})
         })
+        if (module.create) {
+          i18n.addHook('handleMissingKey', async (key, ns, lng, value, options) => new Promise((resolve, reject) => module.create(lng, ns, key, value, (err) => err ? reject(err) : resolve(), options)))
+          if (module.create.length === 6) i18n.addHook('handleUpdateKey', async (key, ns, lng, value, options) => new Promise((resolve, reject) => module.create(lng, ns, key, value, (err) => err ? reject(err) : resolve(), options, true)))
+        }
+        if (module.update) i18n.addHook('handleUpdateKey', async (key, ns, lng, value, options) => new Promise((resolve, reject) => module.create(lng, ns, key, value, (err) => err ? reject(err) : resolve(), options)))
       }
       if (module.type === 'languageDetector') {
         i18n
