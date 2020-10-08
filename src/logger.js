@@ -1,6 +1,4 @@
 const consoleLogger = {
-  type: 'logger',
-
   log (args) {
     this.output('log', args)
   },

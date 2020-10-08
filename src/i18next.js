@@ -1,7 +1,7 @@
 import baseLogger from './logger.js'
 import { getDefaults } from './defaults.js'
 import { hookNames, runHooks } from './hooks.js'
-import { isIE10, flatten, createClassOnDemand } from './utils.js'
+import { isIE10, flatten } from './utils.js'
 import EventEmitter from './EventEmitter.js'
 import LanguageUtils from './LanguageUtils.js'
 
@@ -116,7 +116,7 @@ class I18next extends EventEmitter {
 
   use (module) {
     if (!module) throw new Error('You are passing an undefined module! Please check the object you are passing to i18next.use()')
-    if (module.type === 'logger' || (module.log && module.warn && module.error)) {
+    if (!module.register && module.log && module.warn && module.error) {
       this.services.logger = this.logger
       return this
     }
@@ -141,7 +141,7 @@ class I18next extends EventEmitter {
     await this.runExtendOptionsHooks()
     this.language = this.options.lng
 
-    baseLogger.init(this.services.logger ? createClassOnDemand(this.services.logger) : null, this.options)
+    baseLogger.init(this.services.logger, this.options)
     this.logger = baseLogger
     this.services.logger = this.logger
 

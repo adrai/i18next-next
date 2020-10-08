@@ -46,9 +46,3 @@ export function flatten (target, opts = {}) {
 
   return output
 }
-
-export function createClassOnDemand (ClassOrObject) {
-  if (!ClassOrObject) return null
-  if (typeof ClassOrObject === 'function') return new ClassOrObject()
-  return ClassOrObject
-}
