@@ -271,6 +271,8 @@ class I18next extends EventEmitter {
   }
 
   async changeLanguage (lng) {
+    this.throwIfNotInitializedFn('changeLanguage')
+
     if (!lng) lng = await this.runDetectLanguageHooks()
 
     lng = typeof lng === 'string' ? lng : this.runBestMatchFromCodesHooks(lng)
@@ -278,9 +280,7 @@ class I18next extends EventEmitter {
 
     this.emit('languageChanging', lng)
 
-    await this.load({
-      [lng]: this.seenNamespaces
-    })
+    await this.loadLanguage(lng)
     this.language = lng
     this.languages = this.runResolveHierarchyHooks(this.language)
     await this.runCacheLanguageHooks(this.language)
