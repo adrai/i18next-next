@@ -40,6 +40,12 @@ export function compatibilityLayer (m, opt = {}) {
           })
           .addHook('cacheLanguage', (lng) => module.cacheUserLanguage(lng))
       }
+      if (module.type === 'postProcessor') {
+        i18n.addHook('postProcess', module.name, (value, key, opt) => module.process(value, key, opt, {
+          // exists: // TODO
+          translate: i18n.t.bind(i18n)
+        }))
+      }
     }
   }
 }

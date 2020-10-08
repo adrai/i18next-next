@@ -9,7 +9,8 @@ export const hookNames = [
   'cacheLanguage',
   'bestMatchFromCodes',
   'fallbackCodes',
-  'resolveHierarchy'
+  'resolveHierarchy',
+  'postProcess'
 ]
 
 export const runHooks = async (hooks, args) => {

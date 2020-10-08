@@ -11,6 +11,10 @@ class I18next extends EventEmitter {
     if (isIE10) EventEmitter.call(this) // <=IE10 fix (unable to call parent constructor)
     this.isInitialized = false
     hookNames.forEach((name) => {
+      if (name === 'postProcess') {
+        this[`${name}Hooks`] = {}
+        return
+      }
       this[`${name}Hooks`] = []
     })
     this.resources = {}
@@ -107,6 +111,17 @@ class I18next extends EventEmitter {
     }
   }
 
+  runPostProcessHooks (postProcessorNames, value, key, opt) {
+    postProcessorNames.forEach((n) => {
+      if (this.postProcessHooks[n]) {
+        value = this.postProcessHooks[n](value, key, opt)
+      } else {
+        this.logger.warn(`No post processor found with name ${n}`)
+      }
+    })
+    return value
+  }
+
   cleanResources (res) {
     Object.keys(res).forEach((lng) => {
       Object.keys(res[lng]).forEach((ns) => {
@@ -142,11 +157,19 @@ class I18next extends EventEmitter {
     return this
   }
 
-  addHook (name, hook) {
+  addHook (name, type, hook) {
+    if (!hook) {
+      hook = type
+      type = undefined
+    }
     if (hookNames.indexOf(name) < 0) throw new Error(`${name} is not a valid hook!`)
     this.throwIfAlreadyInitializedFn(`addHook(${name})`)
 
-    this[`${name}Hooks`].push(hook)
+    if (type) {
+      this[`${name}Hooks`][type] = hook
+    } else {
+      this[`${name}Hooks`].push(hook)
+    }
     return this
   }
 
@@ -340,6 +363,13 @@ class I18next extends EventEmitter {
       found = this.runTranslateHooks(possibleKey, ns, lng, options)
     }
     if (found === undefined) this.logger.warn(`No value found for key ${lastKey} in namespace ${ns} for language ${lng}!`)
+
+    const postProcess = options.postProcess || this.options.postProcess
+    const postProcessorNames = typeof postProcess === 'string' ? [postProcess] : postProcess
+    if (found !== undefined && postProcessorNames && postProcessorNames.length) {
+      found = this.runPostProcessHooks(postProcessorNames, found, lastKey, options)
+    }
+
     return found
   }
 }

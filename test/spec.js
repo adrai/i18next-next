@@ -216,4 +216,58 @@ describe('i18next', () => {
     should(translated).eql('a value for de/ns2')
     should(cachedLanguages).eql(['en', 'de'])
   })
+
+  it('post process', async () => {
+    const postProcessor = {
+      type: 'postProcessor',
+      name: 'my-post-processor',
+      intervalMatches (interval, count) {
+        if (interval.indexOf('-') > -1) {
+          const p = interval.split('-')
+          if (p[1] === 'inf') {
+            const from = parseInt(p[0], 10)
+            return count >= from
+          } else {
+            const from = parseInt(p[0], 10)
+            const to = parseInt(p[1], 10)
+            return count >= from && count <= to
+          }
+        } else {
+          const match = parseInt(interval, 10)
+          return match === count
+        }
+      },
+      process (value, key, opt) {
+        const p = value.split(';')
+        let found
+        p.forEach((iv) => {
+          if (found) return
+          const match = /\((\S*)\).*{((.|\n)*)}/.exec(iv)
+
+          if (match && this.intervalMatches(match[1], opt[i18nextInstance.options.pluralOptionProperty] || 0)) {
+            found = match[2]
+          }
+        })
+        return found || value
+      }
+    }
+    const i18nextInstance = i18next({ lng: 'en' })
+    i18nextInstance.addHook('read', (toLoad) => {
+      const res = {}
+      Object.keys(toLoad).forEach((lng) => {
+        toLoad[lng].forEach((ns) => {
+          res[lng] = res[lng] || {}
+          res[lng][ns] = {
+            key: '(1){one item};(2-7){a few items};(7-inf){a lot of items};'
+          }
+        })
+      })
+      return res
+    })
+    i18nextInstance.use(compatibilityLayer(postProcessor))
+    await i18nextInstance.init()
+    // await i18nextInstance.loadNamespace('translation') // loaded via preload in init
+    const translated = i18nextInstance.t('key', { postProcess: 'my-post-processor', count: 2 })
+    should(translated).eql('a few items')
+  })
 })
