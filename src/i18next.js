@@ -5,6 +5,7 @@ import { isIE10, deepFind } from './utils.js'
 import EventEmitter from './EventEmitter.js'
 import LanguageUtils from './LanguageUtils.js'
 import Interpolator from './Interpolator.js'
+import ResourceStore from './ResourceStore.js'
 import throwIf from './throwIf.js'
 import internalApi from './internal.js'
 
@@ -20,17 +21,40 @@ class I18next extends EventEmitter {
       }
       this[`${name}Hooks`] = []
     })
-    this.resources = {}
-    this.seenNamespaces = []
     this.options = { ...getDefaults(), ...options }
     this.language = this.options.lng
+    this.store = new ResourceStore({}, this.options)
     this.languageUtils = new LanguageUtils(this.options)
     this.interpolator = new Interpolator(this.options.interpolation)
     if (this.language) this.languages = this.languageUtils.toResolveHierarchy(this.language)
     this.services = {
+      resourceStore: this.store,
       languageUtils: this.languageUtils,
       interpolator: this.interpolator
     }
+
+    // append api
+    const storeApi = [
+      'getResource',
+      'hasResourceBundle',
+      'getResourceBundle',
+      'getDataByLanguage'
+    ]
+    storeApi.forEach(fcName => {
+      this[fcName] = (...args) => this.store[fcName](...args)
+    })
+    const storeApiChained = [
+      'addResource',
+      'addResources',
+      'addResourceBundle',
+      'removeResourceBundle'
+    ]
+    storeApiChained.forEach(fcName => {
+      this[fcName] = (...args) => {
+        this.store[fcName](...args)
+        return this
+      }
+    })
   }
 
   /**
@@ -76,8 +100,8 @@ class I18next extends EventEmitter {
     this.logger = baseLogger
     this.services.logger = this.logger
 
-    this.resources = await internalApi.runLoadResourcesHooks(this)()
-    internalApi.cleanResources(this)(this.resources)
+    const resources = await internalApi.runLoadResourcesHooks(this)()
+    this.store.setData(resources)
 
     this.addHook('resolvePlural', (count, key, lng, options) => `${key}${this.options.pluralSeparator}${new Intl.PluralRules(lng, { type: options.ordinal ? 'ordinal' : 'cardinal' }).select(count)}`)
     this.addHook('formPlurals', (key, lng, options) => {
@@ -111,7 +135,7 @@ class I18next extends EventEmitter {
 
     if (this.options.preload.length > 0) {
       const toLoad = this.options.preload.reduce((prev, curr) => {
-        prev[curr] = this.seenNamespaces
+        prev[curr] = this.store.getSeenNamespaces()
         return prev
       }, {})
       await this.load(toLoad)
@@ -121,6 +145,10 @@ class I18next extends EventEmitter {
 
     this.logger.log('initialized', this.options)
     this.emit('initialized', this)
+
+    if (!this.language && this.detectLanguageHooks.length === 0) {
+      this.logger.warn('init: no lng is defined and no languageDetector is used')
+    }
 
     return this
   }
@@ -132,11 +160,9 @@ class I18next extends EventEmitter {
       const ret = hook(toLoad)
       const read = await (ret && ret.then ? ret : Promise.resolve(ret))
       if (!read) continue
-      internalApi.cleanResources(this)(read)
       Object.keys(read).forEach((lng) => {
         Object.keys(read[lng]).forEach((ns) => {
-          this.resources[lng] = this.resources[lng] || {}
-          this.resources[lng][ns] = read[lng][ns]
+          this.store.addResourceBundle(lng, ns, read[lng][ns])
           this.logger.log(`loaded namespace ${ns} for language ${lng}`, read[lng][ns])
         })
       })
@@ -156,7 +182,7 @@ class I18next extends EventEmitter {
     this.options.preload = this.options.preload.concat(newLngs)
 
     const toLoad = newLngs.reduce((prev, curr) => {
-      prev[curr] = this.seenNamespaces
+      prev[curr] = this.store.getSeenNamespaces()
       return prev
     }, {})
     return this.load(toLoad)
@@ -198,14 +224,13 @@ class I18next extends EventEmitter {
   isLanguageLoaded (lng) {
     throwIf.notInitializedFn(this)('isLanguageLoaded')
 
-    return this.resources[lng]
+    return this.store.hasResourceBundle(lng)
   }
 
   isNamespaceLoaded (ns, lng) {
     throwIf.notInitializedFn(this)('isNamespaceLoaded')
 
-    if (!lng) return this.seenNamespaces.indexOf(ns) > -1
-    return this.resources[lng] && this.resources[lng][ns]
+    return this.store.hasResourceBundle(lng, ns)
   }
 
   dir (lng) {

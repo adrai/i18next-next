@@ -57,7 +57,7 @@ const internalApi = {
 
   runTranslateHooks: (instance) => (key, ns, lng, options) => {
     for (const hook of instance.translateHooks) {
-      const resolvedValue = hook(key, ns, lng, instance.resources, options)
+      const resolvedValue = hook(key, ns, lng, instance.store.getData(), options)
       if (resolvedValue !== undefined) return resolvedValue
     }
   },
@@ -112,15 +112,6 @@ const internalApi = {
       if (interpolated !== undefined && interpolated !== res) return interpolated
     }
     return res
-  },
-
-  cleanResources: (instance) => (res) => {
-    Object.keys(res).forEach((lng) => {
-      Object.keys(res[lng]).forEach((ns) => {
-        if (instance.seenNamespaces.indexOf(ns) < 0) instance.seenNamespaces.push(ns)
-      })
-    })
-    if (instance.seenNamespaces.indexOf(instance.options.defaultNS) < 0) instance.seenNamespaces.push(instance.options.defaultNS)
   },
 
   isValidLookup: (instance) => (res) => {
