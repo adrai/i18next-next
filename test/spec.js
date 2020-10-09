@@ -396,4 +396,45 @@ describe('i18next', () => {
       'What is cool?'
     ])
   })
+
+  it('namespace in key', async () => {
+    const i18nextInstance = i18next({ lng: 'en' })
+    i18nextInstance.addHook('loadResources', () => ({
+      en: {
+        translation: {
+          key: 'cool stuff'
+        },
+        ns2: {
+          key: 'from ns2',
+          key2: 'value 2 from ns2'
+        }
+      }
+    }))
+    await i18nextInstance.init()
+    let translated = i18nextInstance.t('key')
+    should(translated).eql('cool stuff')
+    translated = i18nextInstance.t('ns2:key')
+    should(translated).eql('from ns2')
+    translated = i18nextInstance.t('ns2:key2')
+    should(translated).eql('value 2 from ns2')
+  })
+
+  it('fallback keys', async () => {
+    const i18nextInstance = i18next({ lng: 'en' })
+    i18nextInstance.addHook('loadResources', () => ({
+      en: {
+        translation: {
+          error: {
+            unspecific: 'Something went wrong.',
+            404: 'The page was not found.'
+          }
+        }
+      }
+    }))
+    await i18nextInstance.init()
+    let translated = i18nextInstance.t(['error.404', 'error.unspecific'])
+    should(translated).eql('The page was not found.')
+    translated = i18nextInstance.t(['error.502', 'error.unspecific'])
+    should(translated).eql('Something went wrong.')
+  })
 })

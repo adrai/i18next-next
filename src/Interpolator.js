@@ -1,22 +1,6 @@
 import baseLogger from './logger.js'
 import { deepFind } from './utils.js'
 
-const entityMap = {
-  '&': '&amp;',
-  '<': '&lt;',
-  '>': '&gt;',
-  '"': '&quot;',
-  "'": '&#39;',
-  '/': '&#x2F;'
-}
-
-const escape = (data) => {
-  if (typeof data === 'string') {
-    return data.replace(/[&<>"'/]/g, s => entityMap[s])
-  }
-  return data
-}
-
 class Interpolator {
   constructor (options = {}) {
     this.logger = baseLogger.create('interpolator')
@@ -34,9 +18,9 @@ class Interpolator {
     this.resetRegExp()
 
     const escapeValue = options.interpolation && options.interpolation.escapeValue !== undefined ? options.interpolation.escapeValue : this.options.escapeValue
-    const escapeFn = options.interpolation && options.interpolation.escape !== undefined ? options.interpolation.escape : (this.options.escape || escape)
+    const escapeFn = options.interpolation && options.interpolation.escape !== undefined ? options.interpolation.escape : this.options.escape
 
-    const defaultData = (this.options && this.options && this.options.defaultVariables) || {}
+    const defaultData = this.options && this.options && this.options.defaultVariables
     const allData = { ...defaultData, ...data }
     let match, value
     while ((match = this.regexp.exec(str))) {

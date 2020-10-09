@@ -122,52 +122,77 @@ const internalApi = {
     )
   },
 
+  extractFromKey: (instance) => (key, options = {}) => {
+    const nsSeparator = options.nsSeparator !== undefined ? options.nsSeparator : instance.options.nsSeparator
+    const keySeparator = options.keySeparator !== undefined ? options.keySeparator : instance.options.keySeparator
+
+    let namespaces = options.ns || instance.options.defaultNS
+    if (nsSeparator && key.indexOf(nsSeparator) > -1 && keySeparator) {
+      const parts = key.split(nsSeparator)
+      if (nsSeparator !== keySeparator || (nsSeparator === keySeparator && instance.options.ns && instance.options.ns.indexOf(parts[0]) > -1)) {
+        namespaces = parts.shift()
+      }
+      key = parts.join(keySeparator)
+    }
+    if (typeof namespaces === 'string') namespaces = [namespaces]
+    return { key, namespaces }
+  },
+
   resolve: (instance) => (keys, options = {}) => {
     if (typeof keys === 'string') keys = [keys]
-    let found, usedKey, exactUsedKey, usedLng//, usedNS
-
-    const usedNS = options.ns
+    let found, usedKey, exactUsedKey, usedLng, usedNS
 
     // forEach possible key
-    keys.forEach((key) => {
+    keys.forEach((k) => {
       if (internalApi.isValidLookup(instance)(found)) return
 
+      const extracted = internalApi.extractFromKey(instance)(k, options)
+      const key = extracted.key
       usedKey = key
+      let namespaces = extracted.namespaces
+      if (instance.options.fallbackNS) namespaces = namespaces.concat(instance.options.fallbackNS)
+
       const codes = internalApi.runResolveHierarchyHooks(instance)(options.lng, options.fallbackLng)
 
-      if (!instance.isNamespaceLoaded(usedNS)) {
-        instance.logger.warn(
-          `key "${usedKey}" for languages "${codes.join(
-            ', '
-          )}" won't get resolved as namespace "${usedNS}" was not yet loaded`,
-          'This means something IS WRONG in your setup. You access the t function before i18next.init / i18next.loadNamespace / i18next.changeLanguage was done. Wait for the callback or Promise to resolve before accessing it!!!'
-        )
-      }
-
-      codes.forEach((code) => {
+      namespaces.forEach(ns => {
         if (internalApi.isValidLookup(instance)(found)) return
 
-        const finalKeys = [key]
-        exactUsedKey = finalKeys[finalKeys.length - 1]
+        usedNS = ns
 
-        internalApi.runAddI18nFormatLookupKeysHooks(instance)(finalKeys, key, code, options.ns, options)
-
-        if (options[instance.options.pluralOptionProperty] !== undefined) {
-          const resolvedKey = internalApi.runResolvePluralHooks(instance)(options[instance.options.pluralOptionProperty], key, code, options)
-          finalKeys.push(resolvedKey)
+        if (!instance.isNamespaceLoaded(usedNS)) {
+          instance.logger.warn(
+            `key "${usedKey}" for languages "${codes.join(
+              ', '
+            )}" won't get resolved as namespace "${usedNS}" was not yet loaded`,
+            'This means something IS WRONG in your setup. You access the t function before i18next.init / i18next.loadNamespace / i18next.changeLanguage was done. Wait for the callback or Promise to resolve before accessing it!!!'
+          )
         }
 
-        if (options[instance.options.contextOptionProperty] !== undefined) {
-          const resolvedKey = internalApi.runResolveContextHooks(instance)(options[instance.options.contextOptionProperty], key, options)
-          finalKeys.push(resolvedKey)
-        }
+        codes.forEach((code) => {
+          if (internalApi.isValidLookup(instance)(found)) return
 
-        // iterate over finalKeys starting with most specific pluralkey (-> contextkey only) -> singularkey only
-        let possibleKey
-        while ((possibleKey = finalKeys.pop()) && !internalApi.isValidLookup(instance)(found)) {
-          exactUsedKey = possibleKey
-          found = internalApi.runTranslateHooks(instance)(possibleKey, options.ns, code, options)
-        }
+          const finalKeys = [key]
+          exactUsedKey = finalKeys[finalKeys.length - 1]
+
+          internalApi.runAddI18nFormatLookupKeysHooks(instance)(finalKeys, key, code, ns, options)
+
+          if (options[instance.options.pluralOptionProperty] !== undefined) {
+            const resolvedKey = internalApi.runResolvePluralHooks(instance)(options[instance.options.pluralOptionProperty], key, code, options)
+            finalKeys.push(resolvedKey)
+          }
+
+          if (options[instance.options.contextOptionProperty] !== undefined) {
+            const resolvedKey = internalApi.runResolveContextHooks(instance)(options[instance.options.contextOptionProperty], key, options)
+            finalKeys.push(resolvedKey)
+          }
+
+          // iterate over finalKeys starting with most specific pluralkey (-> contextkey only) -> singularkey only
+          let possibleKey
+          while ((possibleKey = finalKeys.pop()) && !internalApi.isValidLookup(instance)(found)) {
+            exactUsedKey = possibleKey
+            found = internalApi.runTranslateHooks(instance)(possibleKey, ns, code, options)
+          }
+        })
       })
     })
 

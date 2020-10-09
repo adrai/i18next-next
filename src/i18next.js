@@ -262,7 +262,7 @@ class I18next extends EventEmitter {
     return resolved && resolved.res !== undefined
   }
 
-  t (key, options = {}) {
+  t (keys, options = {}) {
     throwIf.notInitializedFn(this)('t')
 
     const lng = options.lng = options.lng || this.language
@@ -279,16 +279,34 @@ class I18next extends EventEmitter {
       return undefined
     }
 
+    // non valid keys handling
+    if (keys === undefined || keys === null) return ''
+    if (!Array.isArray(keys)) keys = [String(keys)]
+
+    // get namespace(s)
+    const { key, namespaces } = internalApi.extractFromKey(this)(keys[keys.length - 1], options)
+    const namespace = namespaces[namespaces.length - 1]
+
+    // return key on CIMode
+    const appendNamespaceToCIMode = options.appendNamespaceToCIMode || this.options.appendNamespaceToCIMode
+    if (lng && lng.toLowerCase() === 'cimode') {
+      const nsSeparator = options.nsSeparator || this.options.nsSeparator
+      if (appendNamespaceToCIMode && nsSeparator) {
+        return namespace + nsSeparator + key
+      }
+      return key
+    }
+
     // resolve
-    const resolved = internalApi.resolve(this)(key, options)
+    const resolved = internalApi.resolve(this)(keys, options)
     let res = resolved && resolved.res
     const resUsedKey = (resolved && resolved.usedKey) || key
     const resExactUsedKey = (resolved && resolved.exactUsedKey) || key
 
     if (res !== undefined) {
       const handleAsObject = typeof res !== 'string' && typeof res !== 'boolean' && typeof res !== 'number'
-      if (handleAsObject) {
-        const keySeparator = options.keySeparator !== undefined ? options.keySeparator : this.options.keySeparator
+      const keySeparator = options.keySeparator !== undefined ? options.keySeparator : this.options.keySeparator
+      if (handleAsObject && keySeparator) {
         const resType = Object.prototype.toString.apply(res)
         const resTypeIsArray = resType === '[object Array]'
         const copy = resTypeIsArray ? [] : {} // apply child translation on a copy
@@ -311,7 +329,7 @@ class I18next extends EventEmitter {
     res = internalApi.handleMissing(this)(res, resExactUsedKey, key, ns, lng, options)
 
     // extend
-    res = internalApi.extendTranslation(this)(res, resExactUsedKey, options, resolved)
+    res = internalApi.extendTranslation(this)(res, keys, options, resolved)
 
     return res
   }
