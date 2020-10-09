@@ -167,6 +167,145 @@ class I18next extends EventEmitter {
     )
   }
 
+  resolve (keys, options = {}) {
+    this.throwIfNotInitializedFn('changeLanguage')
+
+    if (typeof keys === 'string') keys = [keys]
+    let found, usedKey, exactUsedKey, usedLng//, usedNS
+
+    const usedNS = options.ns
+
+    // forEach possible key
+    keys.forEach((key) => {
+      if (this.isValidLookup(found)) return
+
+      usedKey = key
+      const codes = this.runResolveHierarchyHooks(options.lng, options.fallbackLng)
+
+      if (!this.isNamespaceLoaded(usedNS)) {
+        this.logger.warn(
+          `key "${usedKey}" for languages "${codes.join(
+            ', '
+          )}" won't get resolved as namespace "${usedNS}" was not yet loaded`,
+          'This means something IS WRONG in your setup. You access the t function before i18next.init / i18next.loadNamespace / i18next.changeLanguage was done. Wait for the callback or Promise to resolve before accessing it!!!'
+        )
+      }
+
+      codes.forEach((code) => {
+        if (this.isValidLookup(found)) return
+
+        const finalKeys = [key]
+        exactUsedKey = finalKeys[finalKeys.length - 1]
+
+        this.runAddI18nFormatLookupKeysHooks(finalKeys, key, code, options.ns, options)
+
+        if (options[this.options.pluralOptionProperty] !== undefined) {
+          const resolvedKey = this.runResolvePluralHooks(options[this.options.pluralOptionProperty], key, code, options)
+          finalKeys.push(resolvedKey)
+        }
+
+        if (options[this.options.contextOptionProperty] !== undefined) {
+          const resolvedKey = this.runResolveContextHooks(options[this.options.contextOptionProperty], key, options)
+          finalKeys.push(resolvedKey)
+        }
+
+        // iterate over finalKeys starting with most specific pluralkey (-> contextkey only) -> singularkey only
+        let possibleKey
+        while ((possibleKey = finalKeys.pop()) && !this.isValidLookup(found)) {
+          exactUsedKey = possibleKey
+          found = this.runTranslateHooks(possibleKey, options.ns, code, options)
+        }
+      })
+    })
+
+    return { res: found, usedKey, exactUsedKey, usedLng, usedNS }
+  }
+
+  extendTranslation (res, key, options, resolved) {
+    if (res !== undefined) {
+      res = this.runParseI18nFormatHooks(
+        res,
+        options,
+        resolved.usedLng,
+        resolved.usedNS,
+        resolved.usedKey,
+        { resolved }
+      )
+
+      const postProcess = options.postProcess || this.options.postProcess
+      const postProcessorNames = typeof postProcess === 'string' ? [postProcess] : postProcess
+      if (res !== undefined && postProcessorNames && postProcessorNames.length) {
+        res = this.runPostProcessHooks(postProcessorNames, res, key, options)
+      }
+    }
+    return res
+  }
+
+  handleMissing (res, resExactUsedKey, key, ns, lng, options) {
+    if (res === undefined) {
+      this.logger.warn(`No value found for key ${resExactUsedKey} in namespace ${ns} for language ${lng}!`)
+
+      // string, empty or null
+      let usedDefault = false
+      let usedKey = false
+
+      // fallback value
+      if (!this.isValidLookup(res) && options.defaultValue !== undefined) {
+        usedDefault = true
+        if (!res) res = options.defaultValue
+      }
+
+      if (!this.isValidLookup(res)) {
+        usedKey = true
+        res = key
+      }
+
+      // save missing
+      const updateMissing = options.defaultValue && options.defaultValue !== res && this.options.updateMissing
+      if (usedKey || usedDefault || updateMissing) {
+        this.logger.log(
+          updateMissing ? 'updateKey' : 'missingKey',
+          lng,
+          options.ns,
+          key,
+          updateMissing ? options.defaultValue : res
+        )
+
+        let lngs = []
+        const fallbackLngs = this.runFallbackCodesHooks(this.options.fallbackLng, lng)
+        if (this.options.saveMissingTo === 'fallback' && fallbackLngs && fallbackLngs[0]) {
+          for (let i = 0; i < fallbackLngs.length; i++) lngs.push(fallbackLngs[i])
+        } else if (this.options.saveMissingTo === 'all') {
+          lngs = this.runResolveHierarchyHooks(lng)
+        } else {
+          lngs.push(lng)
+        }
+
+        if (this.options.saveMissing) {
+          const send = async (l, k) => {
+            if (updateMissing) {
+              await this.runHandleUpdateKeyHooks(k, options.ns, l, res, options)
+            } else {
+              await this.runHandleMissingKeyHooks(k, options.ns, l, options.defaultValue, options)
+            }
+            this.emit('missingKey', l, options.ns, k, res)
+          }
+
+          const needsPluralHandling = options[this.options.pluralOptionProperty] !== undefined && typeof options[this.options.pluralOptionProperty] !== 'string'
+          if (this.options.saveMissingPlurals && needsPluralHandling) {
+            lngs.forEach((l) => {
+              const plurals = this.runFormPluralsHooks(key, l, options)
+              plurals.forEach(p => send([l], p))
+            })
+          } else {
+            send(lngs, key)
+          }
+        }
+      }
+    }
+    return res
+  }
+
   /**
    * public api
    */
@@ -360,60 +499,6 @@ class I18next extends EventEmitter {
     this.logger.log('languageChanged', lng)
   }
 
-  resolve (keys, options = {}) {
-    this.throwIfNotInitializedFn('changeLanguage')
-
-    if (typeof keys === 'string') keys = [keys]
-    let found, usedKey, exactUsedKey, usedLng//, usedNS
-
-    const usedNS = options.ns
-
-    // forEach possible key
-    keys.forEach((key) => {
-      if (this.isValidLookup(found)) return
-
-      usedKey = key
-      const codes = this.runResolveHierarchyHooks(options.lng, options.fallbackLng)
-
-      if (!this.isNamespaceLoaded(usedNS)) {
-        this.logger.warn(
-          `key "${usedKey}" for languages "${codes.join(
-            ', '
-          )}" won't get resolved as namespace "${usedNS}" was not yet loaded`,
-          'This means something IS WRONG in your setup. You access the t function before i18next.init / i18next.loadNamespace / i18next.changeLanguage was done. Wait for the callback or Promise to resolve before accessing it!!!'
-        )
-      }
-
-      codes.forEach((code) => {
-        if (this.isValidLookup(found)) return
-
-        const finalKeys = [key]
-        exactUsedKey = finalKeys[finalKeys.length - 1]
-
-        this.runAddI18nFormatLookupKeysHooks(finalKeys, key, code, options.ns, options)
-
-        if (options[this.options.pluralOptionProperty] !== undefined) {
-          const resolvedKey = this.runResolvePluralHooks(options[this.options.pluralOptionProperty], key, code, options)
-          finalKeys.push(resolvedKey)
-        }
-
-        if (options[this.options.contextOptionProperty] !== undefined) {
-          const resolvedKey = this.runResolveContextHooks(options[this.options.contextOptionProperty], key, options)
-          finalKeys.push(resolvedKey)
-        }
-
-        // iterate over finalKeys starting with most specific pluralkey (-> contextkey only) -> singularkey only
-        let possibleKey
-        while ((possibleKey = finalKeys.pop()) && !this.isValidLookup(found)) {
-          exactUsedKey = possibleKey
-          found = this.runTranslateHooks(possibleKey, options.ns, code, options)
-        }
-      })
-    })
-
-    return { res: found, usedKey, exactUsedKey, usedLng, usedNS }
-  }
-
   exists (key, options = {}) {
     const resolved = this.resolve(key, options)
     return resolved && resolved.res !== undefined
@@ -442,85 +527,11 @@ class I18next extends EventEmitter {
     // const resUsedKey = (resolved && resolved.usedKey) || key
     const resExactUsedKey = (resolved && resolved.exactUsedKey) || key
 
-    if (res === undefined) {
-      this.logger.warn(`No value found for key ${resExactUsedKey} in namespace ${ns} for language ${lng}!`)
-
-      // string, empty or null
-      let usedDefault = false
-      let usedKey = false
-
-      // fallback value
-      if (!this.isValidLookup(res) && options.defaultValue !== undefined) {
-        usedDefault = true
-        if (!res) res = options.defaultValue
-      }
-
-      if (!this.isValidLookup(res)) {
-        usedKey = true
-        res = key
-      }
-
-      // save missing
-      const updateMissing = options.defaultValue && options.defaultValue !== res && this.options.updateMissing
-      if (usedKey || usedDefault || updateMissing) {
-        this.logger.log(
-          updateMissing ? 'updateKey' : 'missingKey',
-          lng,
-          options.ns,
-          key,
-          updateMissing ? options.defaultValue : res
-        )
-
-        let lngs = []
-        const fallbackLngs = this.runFallbackCodesHooks(this.options.fallbackLng, lng)
-        if (this.options.saveMissingTo === 'fallback' && fallbackLngs && fallbackLngs[0]) {
-          for (let i = 0; i < fallbackLngs.length; i++) lngs.push(fallbackLngs[i])
-        } else if (this.options.saveMissingTo === 'all') {
-          lngs = this.runResolveHierarchyHooks(lng)
-        } else {
-          lngs.push(lng)
-        }
-
-        if (this.options.saveMissing) {
-          const send = async (l, k) => {
-            if (updateMissing) {
-              await this.runHandleUpdateKeyHooks(k, options.ns, l, res, options)
-            } else {
-              await this.runHandleMissingKeyHooks(k, options.ns, l, options.defaultValue, options)
-            }
-            this.emit('missingKey', l, options.ns, k, res)
-          }
-
-          const needsPluralHandling = options[this.options.pluralOptionProperty] !== undefined && typeof options[this.options.pluralOptionProperty] !== 'string'
-          if (this.options.saveMissingPlurals && needsPluralHandling) {
-            lngs.forEach((l) => {
-              const plurals = this.runFormPluralsHooks(key, l, options)
-              plurals.forEach(p => send([l], p))
-            })
-          } else {
-            send(lngs, key)
-          }
-        }
-      }
-    }
+    // handle missing
+    res = this.handleMissing(res, resExactUsedKey, key, ns, lng, options)
 
     // extend
-    if (res !== undefined) {
-      res = this.runParseI18nFormatHooks(
-        res,
-        options,
-        resolved.usedLng,
-        resolved.usedNS,
-        resolved.usedKey,
-        { resolved }
-      )
-
-      const postProcess = options.postProcess || this.options.postProcess
-      const postProcessorNames = typeof postProcess === 'string' ? [postProcess] : postProcess
-      if (res !== undefined && postProcessorNames && postProcessorNames.length) {
-        res = this.runPostProcessHooks(postProcessorNames, res, resExactUsedKey, options)
-      }
-    }
+    res = this.extendTranslation(res, resExactUsedKey, options, resolved)
 
     return res
   }
