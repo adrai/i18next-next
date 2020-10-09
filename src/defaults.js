@@ -12,10 +12,10 @@ export function getDefaults () {
     saveMissingTo: 'fallback', // 'current' || 'all'
     saveMissingPlurals: true, // will save all forms not only singular key
     interpolation: {
-      // escapeValue: true,
+      escapeValue: true,
       // format: (value, format, lng, options) => value,
-      // prefix: '{{',
-      // suffix: '}}',
+      prefix: '{{',
+      suffix: '}}'
       // formatSeparator: ',',
       // // prefixEscaped: '{{',
       // // suffixEscaped: '}}',

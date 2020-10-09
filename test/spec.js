@@ -122,7 +122,6 @@ describe('i18next', () => {
       return res
     })
     await i18nextInstance.init()
-    // await i18nextInstance.loadNamespace('translation') // loaded via preload in init
     let translated = i18nextInstance.t('key')
     should(translated).eql('a value for en/translation')
     await i18nextInstance.loadNamespace('translation', 'de')
@@ -155,7 +154,6 @@ describe('i18next', () => {
     const i18nextInstance = i18next({ lng: 'en' })
     i18nextInstance.use(compatibilityLayer(Backend, { onlyBackend: 'options' }))
     await i18nextInstance.init()
-    // await i18nextInstance.loadNamespace('translation') // loaded via preload in init
     let translated = i18nextInstance.t('key')
     should(translated).eql('a value for en/translation from old backend')
     await i18nextInstance.loadNamespace('translation', 'de')
@@ -267,7 +265,6 @@ describe('i18next', () => {
     })
     i18nextInstance.use(compatibilityLayer(postProcessor))
     await i18nextInstance.init()
-    // await i18nextInstance.loadNamespace('translation') // loaded via preload in init
     const translated = i18nextInstance.t('key', { postProcess: 'my-post-processor', count: 2 })
     should(translated).eql('a few items')
   })
@@ -287,7 +284,6 @@ describe('i18next', () => {
       }
     }))
     await i18nextInstance.init()
-    // await i18nextInstance.loadNamespace('translation') // loaded via preload in init
     let translated = i18nextInstance.t('key')
     should(translated).eql('a value for en/translation')
     translated = i18nextInstance.t('key', { lng: 'en-GB' })
@@ -314,7 +310,6 @@ describe('i18next', () => {
       missings.push({ key, ns, lng, value, options })
     })
     await i18nextInstance.init()
-    // await i18nextInstance.loadNamespace('translation') // loaded via preload in init
     let translated = i18nextInstance.t('key')
     should(translated).eql('a value for en/translation')
     translated = i18nextInstance.t('key', { lng: 'de', defaultValue: 'a value for de/translation' })
@@ -332,7 +327,8 @@ describe('i18next', () => {
     i18nextInstance.addHook('loadResources', () => ({
       en: {
         translation: {
-          key: 'a value for en/translation with _something_'
+          key: 'a value for en/translation with _something_',
+          keyDefault: 'a value for en/translation with {{something}}'
         }
       }
     }))
@@ -347,8 +343,30 @@ describe('i18next', () => {
       return str
     })
     await i18nextInstance.init()
-    // await i18nextInstance.loadNamespace('translation') // loaded via preload in init
-    const translated = i18nextInstance.t('key', { something: 'magic' })
+    let translated = i18nextInstance.t('key', { something: 'magic' })
     should(translated).eql('a value for en/translation with magic')
+    translated = i18nextInstance.t('keyDefault', { something: 'wonder' })
+    should(translated).eql('a value for en/translation with wonder')
+  })
+
+  it('default interpolation', async () => {
+    const i18nextInstance = i18next({ lng: 'en' })
+    i18nextInstance.addHook('loadResources', () => ({
+      en: {
+        translation: {
+          key: 'a value for en/translation with {{something}}',
+          key2: 'a value for en/translation with {{obj.something}}'
+        }
+      }
+    }))
+    await i18nextInstance.init()
+    let translated = i18nextInstance.t('key', { something: 'magic' })
+    should(translated).eql('a value for en/translation with magic')
+    translated = i18nextInstance.t('key2', { obj: { something: 'cool' } })
+    should(translated).eql('a value for en/translation with cool')
+    translated = i18nextInstance.t('key', { something: '<img />' })
+    should(translated).eql('a value for en/translation with &lt;img &#x2F;&gt;')
+    translated = i18nextInstance.t('key', { something: '<img />', interpolation: { escapeValue: false } })
+    should(translated).eql('a value for en/translation with <img />')
   })
 })

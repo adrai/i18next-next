@@ -2,7 +2,7 @@ import baseLogger from './logger.js'
 
 const capitalize = (string) => string.charAt(0).toUpperCase() + string.slice(1)
 
-class LanguageUtil {
+class LanguageUtils {
   constructor (options = {}) {
     this.options = options
     this.logger = baseLogger.create('languageUtils')
@@ -215,4 +215,4 @@ class LanguageUtil {
   }
 }
 
-export default LanguageUtil
+export default LanguageUtils

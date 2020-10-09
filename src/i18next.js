@@ -4,6 +4,7 @@ import { hookNames, runHooks } from './hooks.js'
 import { isIE10, flatten } from './utils.js'
 import EventEmitter from './EventEmitter.js'
 import LanguageUtils from './LanguageUtils.js'
+import Interpolator from './Interpolator.js'
 
 class I18next extends EventEmitter {
   constructor (options = {}) {
@@ -22,9 +23,11 @@ class I18next extends EventEmitter {
     this.options = { ...getDefaults(), ...options }
     this.language = this.options.lng
     this.languageUtils = new LanguageUtils(this.options)
+    this.interpolator = new Interpolator(this.options.interpolation)
     if (this.language) this.languages = this.languageUtils.toResolveHierarchy(this.language)
     this.services = {
-      languageUtils: this.languageUtils
+      languageUtils: this.languageUtils,
+      interpolator: this.interpolator
     }
   }
 
@@ -379,13 +382,18 @@ class I18next extends EventEmitter {
     this.addHook('bestMatchFromCodes', (lngs) => this.languageUtils.getBestMatchFromCodes(lngs))
     this.addHook('fallbackCodes', (fallbackLng, lng) => this.languageUtils.getFallbackCodes(fallbackLng, lng))
     this.addHook('resolveHierarchy', (lng, fallbackLng) => this.languageUtils.toResolveHierarchy(lng, fallbackLng))
-    // this.addHook('interpolate', (value, data, options) => )
+    this.addHook('interpolate', (value, data, options) => this.interpolator.interpolate(value, data, options))
 
     this.services.languageUtils = {
       ...this.services.languageUtils,
       getBestMatchFromCodes: this.runBestMatchFromCodesHooks.bind(this),
       getFallbackCodes: this.runFallbackCodesHooks.bind(this),
       toResolveHierarchy: this.runResolveHierarchyHooks.bind(this)
+    }
+
+    this.services.interpolator = {
+      ...this.services.interpolator,
+      interpolate: this.runInterpolateHooks.bind(this)
     }
 
     if (this.language) this.languages = this.runResolveHierarchyHooks(this.language)
