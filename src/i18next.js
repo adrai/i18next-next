@@ -265,6 +265,10 @@ class I18next extends EventEmitter {
   t (keys, options = {}) {
     throwIf.notInitializedFn(this)('t')
 
+    // if (this.options.overloadTranslationOptionHandler) {
+    //   options = { ...options, ...this.options.overloadTranslationOptionHandler(arguments) }
+    // }
+
     const lng = options.lng = options.lng || this.language
     if (!lng) throw new Error('There is no language defined!')
 
