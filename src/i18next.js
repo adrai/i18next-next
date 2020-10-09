@@ -152,7 +152,7 @@ class I18next extends EventEmitter {
   runInterpolateHooks (res, data, options) {
     for (const hook of this.interpolateHooks) {
       const interpolated = hook(res, data, options)
-      if (interpolated !== undefined) return interpolated
+      if (interpolated !== undefined && interpolated !== res) return interpolated
     }
     return res
   }
