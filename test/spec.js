@@ -79,7 +79,7 @@ describe('i18next', () => {
         }
       }
     }))
-    i18nextInstance.addHook('translate', (key, ns, lng, res) => res[lng][ns][`prefixed.${key}`])
+    i18nextInstance.addHook('translate', (key, ns, lng, res) => res[lng][ns].prefixed[`${key}`])
     await i18nextInstance.init()
     const translated = i18nextInstance.t('key', { count: 3 })
     should(translated).eql('other values')
@@ -99,7 +99,7 @@ describe('i18next', () => {
             }
           }
         }))
-        i18n.addHook('translate', (key, ns, lng, res) => res[lng][ns][`prefixed.${key}`])
+        i18n.addHook('translate', (key, ns, lng, res) => res[lng][ns].prefixed[`${key}`])
       }
     })
     await i18nextInstance.init()

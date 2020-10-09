@@ -1,5 +1,5 @@
 import baseLogger from './logger.js'
-import { flatten } from './utils.js'
+import { deepFind } from './utils.js'
 
 const entityMap = {
   '&': '&amp;',
@@ -37,11 +37,11 @@ class Interpolator {
     const escapeFn = options.interpolation && options.interpolation.escape !== undefined ? options.interpolation.escape : (this.options.escape || escape)
 
     const defaultData = (this.options && this.options && this.options.defaultVariables) || {}
-    const flatData = flatten({ ...defaultData, ...data })
+    const allData = { ...defaultData, ...data }
     let match, value
     while ((match = this.regexp.exec(str))) {
       const variable = match[1].trim()
-      value = flatData[variable]
+      value = deepFind(allData, variable)
       if (value === undefined) {
         this.logger.warn(`missed to pass in variable ${match[1]} for interpolating ${str}`)
         value = ''

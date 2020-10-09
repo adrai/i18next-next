@@ -1,5 +1,4 @@
 import { runHooks } from './hooks.js'
-import { flatten } from './utils.js'
 
 const internalApi = {
   runExtendOptionsHooks: (instance) => async () => {
@@ -119,7 +118,6 @@ const internalApi = {
     Object.keys(res).forEach((lng) => {
       Object.keys(res[lng]).forEach((ns) => {
         if (instance.seenNamespaces.indexOf(ns) < 0) instance.seenNamespaces.push(ns)
-        res[lng][ns] = flatten(res[lng][ns])
       })
     })
     if (instance.seenNamespaces.indexOf(instance.options.defaultNS) < 0) instance.seenNamespaces.push(instance.options.defaultNS)

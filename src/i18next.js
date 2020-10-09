@@ -1,7 +1,7 @@
 import baseLogger from './logger.js'
 import { getDefaults } from './defaults.js'
 import { hookNames } from './hooks.js'
-import { isIE10 } from './utils.js'
+import { isIE10, deepFind } from './utils.js'
 import EventEmitter from './EventEmitter.js'
 import LanguageUtils from './LanguageUtils.js'
 import Interpolator from './Interpolator.js'
@@ -85,7 +85,7 @@ class I18next extends EventEmitter {
       return pr.resolvedOptions().pluralCategories.map((form) => `${key}${this.options.pluralSeparator}${form}`)
     })
     this.addHook('resolveContext', (context, key, options) => `${key}${this.options.contextSeparator}${context}`)
-    this.addHook('translate', (key, ns, lng, res, options) => res[lng][ns][key])
+    this.addHook('translate', (key, ns, lng, res, options) => deepFind(res[lng][ns], key))
     this.addHook('bestMatchFromCodes', (lngs) => this.languageUtils.getBestMatchFromCodes(lngs))
     this.addHook('fallbackCodes', (fallbackLng, lng) => this.languageUtils.getFallbackCodes(fallbackLng, lng))
     this.addHook('resolveHierarchy', (lng, fallbackLng) => this.languageUtils.toResolveHierarchy(lng, fallbackLng))
