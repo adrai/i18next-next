@@ -369,4 +369,31 @@ describe('i18next', () => {
     translated = i18nextInstance.t('key', { something: '<img />', interpolation: { escapeValue: false } })
     should(translated).eql('a value for en/translation with <img />')
   })
+
+  it('interpolated result as objects', async () => {
+    const i18nextInstance = i18next({ lng: 'en' })
+    i18nextInstance.addHook('loadResources', () => ({
+      en: {
+        translation: {
+          key: {
+            some: 'cool {{stuff}}'
+          },
+          key2: [
+            'item',
+            'item2',
+            'What is {{this}}?'
+          ]
+        }
+      }
+    }))
+    await i18nextInstance.init()
+    let translated = i18nextInstance.t('key', { stuff: 'magic' })
+    should(translated).eql({ some: 'cool magic' })
+    translated = i18nextInstance.t('key2', { this: 'cool' })
+    should(translated).eql([
+      'item',
+      'item2',
+      'What is cool?'
+    ])
+  })
 })

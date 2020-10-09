@@ -282,8 +282,30 @@ class I18next extends EventEmitter {
     // resolve
     const resolved = internalApi.resolve(this)(key, options)
     let res = resolved && resolved.res
-    // const resUsedKey = (resolved && resolved.usedKey) || key
+    const resUsedKey = (resolved && resolved.usedKey) || key
     const resExactUsedKey = (resolved && resolved.exactUsedKey) || key
+
+    if (res !== undefined) {
+      const handleAsObject = typeof res !== 'string' && typeof res !== 'boolean' && typeof res !== 'number'
+      if (handleAsObject) {
+        const keySeparator = options.keySeparator !== undefined ? options.keySeparator : this.options.keySeparator
+        const resType = Object.prototype.toString.apply(res)
+        const resTypeIsArray = resType === '[object Array]'
+        const copy = resTypeIsArray ? [] : {} // apply child translation on a copy
+        const newKeyToUse = resTypeIsArray ? resExactUsedKey : resUsedKey
+        for (const m in res) {
+          if (Object.prototype.hasOwnProperty.call(res, m)) {
+            const deepKey = `${newKeyToUse}${keySeparator}${m}`
+            copy[m] = this.t(deepKey, {
+              ...options,
+              ...{ joinArrays: false, ns }
+            })
+            if (copy[m] === deepKey) copy[m] = res[m] // if nothing found use orginal value as fallback
+          }
+        }
+        res = copy
+      }
+    }
 
     // handle missing
     res = internalApi.handleMissing(this)(res, resExactUsedKey, key, ns, lng, options)
