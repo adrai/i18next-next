@@ -15,7 +15,8 @@ export const hookNames = [
   'resolveHierarchy',
   'postProcess',
   'parseI18nFormat',
-  'addI18nFormatLookupKeys'
+  'addI18nFormatLookupKeys',
+  'interpolate'
 ]
 
 export const runHooks = async (hooks, args) => {

@@ -326,4 +326,29 @@ describe('i18next', () => {
     should(missings[0].lng).eql(['de'])
     should(missings[0].value).eql('a value for de/translation')
   })
+
+  it('custom interpolation', async () => {
+    const i18nextInstance = i18next({ lng: 'en' })
+    i18nextInstance.addHook('loadResources', () => ({
+      en: {
+        translation: {
+          key: 'a value for en/translation with _something_'
+        }
+      }
+    }))
+    i18nextInstance.addHook('interpolate', (str, data, options) => {
+      const regexp = new RegExp('_(.+?)_', 'g')
+      let match, value
+      while ((match = regexp.exec(str))) {
+        value = match[1].trim()
+        str = str.replace(match[0], data[value])
+        regexp.lastIndex = 0
+      }
+      return str
+    })
+    await i18nextInstance.init()
+    // await i18nextInstance.loadNamespace('translation') // loaded via preload in init
+    const translated = i18nextInstance.t('key', { something: 'magic' })
+    should(translated).eql('a value for en/translation with magic')
+  })
 })

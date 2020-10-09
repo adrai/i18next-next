@@ -149,6 +149,14 @@ class I18next extends EventEmitter {
     this.addI18nFormatLookupKeysHooks.forEach((hook) => hook(finalKeys, key, code, ns, options))
   }
 
+  runInterpolateHooks (res, data, options) {
+    for (const hook of this.interpolateHooks) {
+      const interpolated = hook(res, data, options)
+      if (interpolated !== undefined) return interpolated
+    }
+    return res
+  }
+
   cleanResources (res) {
     Object.keys(res).forEach((lng) => {
       Object.keys(res[lng]).forEach((ns) => {
@@ -221,27 +229,36 @@ class I18next extends EventEmitter {
     return { res: found, usedKey, exactUsedKey, usedLng, usedNS }
   }
 
-  extendTranslation (res, key, options, resolved) {
-    if (res !== undefined) {
-      res = this.runParseI18nFormatHooks(
-        res,
-        options,
-        resolved.usedLng,
-        resolved.usedNS,
-        resolved.usedKey,
-        { resolved }
-      )
+  extendTranslation (res, key, options = {}, resolved) {
+    if (res === undefined) return res
 
-      const postProcess = options.postProcess || this.options.postProcess
-      const postProcessorNames = typeof postProcess === 'string' ? [postProcess] : postProcess
-      if (res !== undefined && postProcessorNames && postProcessorNames.length) {
-        res = this.runPostProcessHooks(postProcessorNames, res, key, options)
-      }
+    const newRes = this.runParseI18nFormatHooks(
+      res,
+      options,
+      resolved.usedLng,
+      resolved.usedNS,
+      resolved.usedKey,
+      { resolved }
+    )
+
+    if (res === newRes && !options.skipInterpolation) {
+      let data = options.replace && typeof options.replace !== 'string' ? options.replace : options
+      if (this.options.interpolation.defaultVariables) data = { ...this.options.interpolation.defaultVariables, ...data }
+      res = this.runInterpolateHooks(res, data, options)
+    } else {
+      res = newRes
     }
+
+    const postProcess = options.postProcess || this.options.postProcess
+    const postProcessorNames = typeof postProcess === 'string' ? [postProcess] : postProcess
+    if (res !== undefined && postProcessorNames && postProcessorNames.length) {
+      res = this.runPostProcessHooks(postProcessorNames, res, key, options)
+    }
+
     return res
   }
 
-  handleMissing (res, resExactUsedKey, key, ns, lng, options) {
+  handleMissing (res, resExactUsedKey, key, ns, lng, options = {}) {
     if (res === undefined) {
       this.logger.warn(`No value found for key ${resExactUsedKey} in namespace ${ns} for language ${lng}!`)
 
@@ -362,6 +379,7 @@ class I18next extends EventEmitter {
     this.addHook('bestMatchFromCodes', (lngs) => this.languageUtils.getBestMatchFromCodes(lngs))
     this.addHook('fallbackCodes', (fallbackLng, lng) => this.languageUtils.getFallbackCodes(fallbackLng, lng))
     this.addHook('resolveHierarchy', (lng, fallbackLng) => this.languageUtils.toResolveHierarchy(lng, fallbackLng))
+    // this.addHook('interpolate', (value, data, options) => )
 
     this.services.languageUtils = {
       ...this.services.languageUtils,
