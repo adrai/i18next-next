@@ -193,6 +193,25 @@ describe('i18next', () => {
     should(translated).eql('a value for en/translation from old backend')
   })
 
+  it('inline resources with initImmediate = false', () => {
+    const i18nextInstance = i18next({ lng: 'en', initImmediate: false })
+    i18nextInstance.addHook('read', (toLoad) => {
+      const res = {}
+      Object.keys(toLoad).forEach((lng) => {
+        toLoad[lng].forEach((ns) => {
+          res[lng] = res[lng] || {}
+          res[lng][ns] = {
+            key: `a value for ${lng}/${ns}`
+          }
+        })
+      })
+      return res
+    })
+    i18nextInstance.init()
+    const translated = i18nextInstance.t('key')
+    should(translated).eql('a value for en/translation')
+  })
+
   it('changeLanguage and languageDetector', async () => {
     const cachedLanguages = []
     class LanguageDetector {

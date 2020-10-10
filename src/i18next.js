@@ -107,7 +107,9 @@ class I18next extends EventEmitter {
     this.services.logger = this.logger
 
     if (this.options.initImmediate === false) {
-      internalApi.runLoadResourcesHooks(this)().then((resources) => this.store.setData(resources))
+      const allResources = this.loadResourcesHooks.map((hook) => hook(this.options))
+      const resources = allResources.reduce((prev, curr) => ({ ...prev, ...curr }), {})
+      this.store.setData(resources)
     } else {
       const resources = await internalApi.runLoadResourcesHooks(this)()
       this.store.setData(resources)
