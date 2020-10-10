@@ -30,15 +30,15 @@ class Interpolator {
   }
 
   interpolate (str, data, lng, options = {}) {
-    this.resetRegExp()
-
     const escapeValue = options.interpolation && options.interpolation.escapeValue !== undefined ? options.interpolation.escapeValue : this.options.escapeValue
     const escapeFn = options.interpolation && options.interpolation.escape !== undefined ? options.interpolation.escape : this.options.escape
 
     const defaultData = (this.options && this.options && this.options.defaultVariables) || {}
     const allData = { ...defaultData, ...data }
-    let match, value
-    while ((match = this.regexp.exec(str))) {
+    this.resetRegExp()
+    let match = this.regexp.exec(str)
+    let value
+    while (match) {
       const variable = match[1].trim()
       value = this.handleFormat(variable, allData, lng, options)
       if (value === undefined) {
@@ -46,6 +46,9 @@ class Interpolator {
         value = ''
       }
       str = str.replace(match[0], escapeValue ? escapeFn(value) : value)
+
+      this.resetRegExp()
+      match = this.regexp.exec(str)
     }
     return str
   }

@@ -358,7 +358,8 @@ describe('i18next', () => {
       en: {
         translation: {
           key: 'a value for en/translation with {{something}}',
-          key2: 'a value for en/translation with {{obj.something}}'
+          key2: 'a value for en/translation with {{obj.something}}',
+          key3: 'a value for en/translation with {{something}} and {{obj.something}}'
         }
       }
     }))
@@ -367,6 +368,8 @@ describe('i18next', () => {
     should(translated).eql('a value for en/translation with magic')
     translated = i18nextInstance.t('key2', { obj: { something: 'cool' } })
     should(translated).eql('a value for en/translation with cool')
+    translated = i18nextInstance.t('key3', { something: 'magic', obj: { something: 'cool' } })
+    should(translated).eql('a value for en/translation with magic and cool')
     translated = i18nextInstance.t('key', { something: '<img />' })
     should(translated).eql('a value for en/translation with &lt;img &#x2F;&gt;')
     translated = i18nextInstance.t('key', { something: '<img />', interpolation: { escapeValue: false } })
