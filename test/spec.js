@@ -1,6 +1,6 @@
 import i18next from '../index.js'
 import should from 'should'
-import { compatibilityLayer } from './helpers/compatibilityLayer.js'
+import compatibilityLayer from './helpers/compatibilityLayer.js'
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 describe('i18next', () => {

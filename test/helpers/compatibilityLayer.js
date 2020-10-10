@@ -4,7 +4,7 @@ function createClassOnDemand (ClassOrObject) {
   return ClassOrObject
 }
 
-export function compatibilityLayer (m, opt = {}) {
+export default function compatibilityLayer (m, opt = {}) {
   const module = createClassOnDemand(m)
   return { // opt are module specific options... not anymore passed as module options on global i18next options
     register: (i18n) => {
