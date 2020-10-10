@@ -48,7 +48,7 @@ export function compatibilityLayer (m, opt = {}) {
       }
       if (module.type === 'postProcessor') {
         i18n.addHook('postProcess', module.name, (value, key, opt) => module.process(value, key, opt, {
-          // exists: // TODO
+          exists: i18n.exists.bind(i18n),
           translate: i18n.t.bind(i18n)
         }))
       }
