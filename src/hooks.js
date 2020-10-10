@@ -2,6 +2,7 @@ export const hookNames = [
   'extendOptions',
   'loadResources',
   'resolvePlural',
+  'translate',
   'formPlurals',
   'resolveContext',
   'resolveKey',

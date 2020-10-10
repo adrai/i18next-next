@@ -114,6 +114,14 @@ const internalApi = {
     return res
   },
 
+  runTranslateHooks: (instance) => (key, ns, lng, options = {}) => {
+    for (const hook of instance.translateHooks) {
+      const translated = hook(key, ns, lng, options)
+      if (translated !== undefined) return translated
+    }
+    return undefined
+  },
+
   isValidLookup: (instance) => (res) => {
     return (
       res !== undefined &&
@@ -290,6 +298,62 @@ const internalApi = {
         }
       }
     }
+    return res
+  },
+
+  translate: (instance) => (keys, ns, lng, options) => {
+    // non valid keys handling
+    if (keys === undefined || keys === null) return ''
+    if (!Array.isArray(keys)) keys = [String(keys)]
+
+    // get namespace(s)
+    const { key, namespaces } = internalApi.extractFromKey(instance)(keys[keys.length - 1], options)
+    const namespace = namespaces[namespaces.length - 1]
+
+    // return key on CIMode
+    const appendNamespaceToCIMode = options.appendNamespaceToCIMode || instance.options.appendNamespaceToCIMode
+    if (lng && lng.toLowerCase() === 'cimode') {
+      const nsSeparator = options.nsSeparator || instance.options.nsSeparator
+      if (appendNamespaceToCIMode && nsSeparator) {
+        return namespace + nsSeparator + key
+      }
+      return key
+    }
+
+    // resolve
+    const resolved = internalApi.resolve(instance)(keys, options)
+    let res = resolved && resolved.res
+    const resUsedKey = (resolved && resolved.usedKey) || key
+    const resExactUsedKey = (resolved && resolved.exactUsedKey) || key
+
+    if (res !== undefined) {
+      const handleAsObject = typeof res !== 'string' && typeof res !== 'boolean' && typeof res !== 'number'
+      const keySeparator = options.keySeparator !== undefined ? options.keySeparator : instance.options.keySeparator
+      if (handleAsObject && keySeparator) {
+        const resType = Object.prototype.toString.apply(res)
+        const resTypeIsArray = resType === '[object Array]'
+        const copy = resTypeIsArray ? [] : {} // apply child translation on a copy
+        const newKeyToUse = resTypeIsArray ? resExactUsedKey : resUsedKey
+        for (const m in res) {
+          if (Object.prototype.hasOwnProperty.call(res, m)) {
+            const deepKey = `${newKeyToUse}${keySeparator}${m}`
+            copy[m] = instance.t(deepKey, {
+              ...options,
+              ...{ joinArrays: false, ns }
+            })
+            if (copy[m] === deepKey) copy[m] = res[m] // if nothing found use orginal value as fallback
+          }
+        }
+        res = copy
+      }
+    }
+
+    // handle missing
+    res = internalApi.handleMissing(instance)(res, resExactUsedKey, key, ns, lng, options)
+
+    // extend
+    res = internalApi.extendTranslation(instance)(res, keys, resolved, options)
+
     return res
   }
 }

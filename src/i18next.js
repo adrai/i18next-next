@@ -123,6 +123,7 @@ class I18next extends EventEmitter {
       this.logger.log('set data', resources)
     }
 
+    this.addHook('translate', (key, ns, lng, options) => internalApi.translate(this)(key, ns, lng, options))
     this.addHook('resolvePlural', (count, key, lng, options) => `${key}${this.options.pluralSeparator}${new Intl.PluralRules(lng, { type: options.ordinal ? 'ordinal' : 'cardinal' }).select(count)}`)
     this.addHook('formPlurals', (key, lng, options) => {
       const pr = new Intl.PluralRules(lng, { type: options.ordinal ? 'ordinal' : 'cardinal' })
@@ -331,7 +332,7 @@ class I18next extends EventEmitter {
     return fixedT
   }
 
-  t (keys, options = {}) {
+  t (key, options = {}) {
     throwIf.notInitializedFn(this)('t')
 
     // if (this.options.overloadTranslationOptionHandler) {
@@ -352,59 +353,7 @@ class I18next extends EventEmitter {
       return undefined
     }
 
-    // non valid keys handling
-    if (keys === undefined || keys === null) return ''
-    if (!Array.isArray(keys)) keys = [String(keys)]
-
-    // get namespace(s)
-    const { key, namespaces } = internalApi.extractFromKey(this)(keys[keys.length - 1], options)
-    const namespace = namespaces[namespaces.length - 1]
-
-    // return key on CIMode
-    const appendNamespaceToCIMode = options.appendNamespaceToCIMode || this.options.appendNamespaceToCIMode
-    if (lng && lng.toLowerCase() === 'cimode') {
-      const nsSeparator = options.nsSeparator || this.options.nsSeparator
-      if (appendNamespaceToCIMode && nsSeparator) {
-        return namespace + nsSeparator + key
-      }
-      return key
-    }
-
-    // resolve
-    const resolved = internalApi.resolve(this)(keys, options)
-    let res = resolved && resolved.res
-    const resUsedKey = (resolved && resolved.usedKey) || key
-    const resExactUsedKey = (resolved && resolved.exactUsedKey) || key
-
-    if (res !== undefined) {
-      const handleAsObject = typeof res !== 'string' && typeof res !== 'boolean' && typeof res !== 'number'
-      const keySeparator = options.keySeparator !== undefined ? options.keySeparator : this.options.keySeparator
-      if (handleAsObject && keySeparator) {
-        const resType = Object.prototype.toString.apply(res)
-        const resTypeIsArray = resType === '[object Array]'
-        const copy = resTypeIsArray ? [] : {} // apply child translation on a copy
-        const newKeyToUse = resTypeIsArray ? resExactUsedKey : resUsedKey
-        for (const m in res) {
-          if (Object.prototype.hasOwnProperty.call(res, m)) {
-            const deepKey = `${newKeyToUse}${keySeparator}${m}`
-            copy[m] = this.t(deepKey, {
-              ...options,
-              ...{ joinArrays: false, ns }
-            })
-            if (copy[m] === deepKey) copy[m] = res[m] // if nothing found use orginal value as fallback
-          }
-        }
-        res = copy
-      }
-    }
-
-    // handle missing
-    res = internalApi.handleMissing(this)(res, resExactUsedKey, key, ns, lng, options)
-
-    // extend
-    res = internalApi.extendTranslation(this)(res, keys, resolved, options)
-
-    return res
+    return internalApi.runTranslateHooks(this)(key, ns, lng, options)
   }
 
   async cloneInstance (options = {}) {
