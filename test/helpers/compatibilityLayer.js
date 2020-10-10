@@ -11,24 +11,48 @@ export default function compatibilityLayer (m, opt = {}) {
       i18n.services.utils.hasLoadedNamespace = i18n.services.utils.isNamespaceLoaded
       if (module.init && module.type !== '3rdParty') module.init(i18n.services, opt, i18n.options)
       if (module.type === 'backend') {
-        const read = (lng, ns) => new Promise((resolve, reject) => module.read(lng, ns, (err, ret) => err ? reject(err) : resolve(ret)))
-        i18n.addHook('read', async (toLoad) => {
-          const toRead = []
-          Object.keys(toLoad).forEach((lng) => {
-            toLoad[lng].forEach((ns) => {
-              toRead.push({ lng, ns })
+        if (i18n.options.initImmediate === false) {
+          i18n.addHook('read', (toLoad) => {
+            const toRead = []
+            Object.keys(toLoad).forEach((lng) => {
+              toLoad[lng].forEach((ns) => {
+                toRead.push({ lng, ns })
+              })
             })
+            const res = toRead.map((entry) => {
+              let read
+              module.read(entry.lng, entry.ns, (err, ret) => {
+                if (err) throw err
+                read = ret
+              })
+              return { lng: entry.lng, ns: entry.ns, resources: read }
+            })
+            return res.reduce((prev, curr) => {
+              prev[curr.lng] = prev[curr.lng] || {}
+              prev[curr.lng][curr.ns] = curr.resources
+              return prev
+            }, {})
           })
-          const res = await Promise.all(toRead.map(async (entry) => {
-            const ret = await read(entry.lng, entry.ns)
-            return { lng: entry.lng, ns: entry.ns, resources: ret }
-          }))
-          return res.reduce((prev, curr) => {
-            prev[curr.lng] = prev[curr.lng] || {}
-            prev[curr.lng][curr.ns] = curr.resources
-            return prev
-          }, {})
-        })
+        } else {
+          const read = (lng, ns) => new Promise((resolve, reject) => module.read(lng, ns, (err, ret) => err ? reject(err) : resolve(ret)))
+          i18n.addHook('read', async (toLoad) => {
+            const toRead = []
+            Object.keys(toLoad).forEach((lng) => {
+              toLoad[lng].forEach((ns) => {
+                toRead.push({ lng, ns })
+              })
+            })
+            const res = await Promise.all(toRead.map(async (entry) => {
+              const ret = await read(entry.lng, entry.ns)
+              return { lng: entry.lng, ns: entry.ns, resources: ret }
+            }))
+            return res.reduce((prev, curr) => {
+              prev[curr.lng] = prev[curr.lng] || {}
+              prev[curr.lng][curr.ns] = curr.resources
+              return prev
+            }, {})
+          })
+        }
         if (module.create) {
           i18n.addHook('handleMissingKey', async (key, ns, lng, value, options) => new Promise((resolve, reject) => module.create(lng, ns, key, value, (err) => err ? reject(err) : resolve(), options)))
           if (module.create.length === 6) i18n.addHook('handleUpdateKey', async (key, ns, lng, value, options) => new Promise((resolve, reject) => module.create(lng, ns, key, value, (err) => err ? reject(err) : resolve(), options, true)))

@@ -98,15 +98,20 @@ class I18next extends EventEmitter {
   async init () {
     throwIf.alreadyInitializedFn('Already initialized!')
 
-    await internalApi.runExtendOptionsHooks(this)()
+    if (this.options.initImmediate === false) internalApi.runExtendOptionsHooks(this)()
+    else await internalApi.runExtendOptionsHooks(this)()
     this.language = this.options.lng
 
     baseLogger.init(this.services.logger, this.options)
     this.logger = baseLogger
     this.services.logger = this.logger
 
-    const resources = await internalApi.runLoadResourcesHooks(this)()
-    this.store.setData(resources)
+    if (this.options.initImmediate === false) {
+      internalApi.runLoadResourcesHooks(this)().then((resources) => this.store.setData(resources))
+    } else {
+      const resources = await internalApi.runLoadResourcesHooks(this)()
+      this.store.setData(resources)
+    }
 
     this.addHook('resolvePlural', (count, key, lng, options) => `${key}${this.options.pluralSeparator}${new Intl.PluralRules(lng, { type: options.ordinal ? 'ordinal' : 'cardinal' }).select(count)}`)
     this.addHook('formPlurals', (key, lng, options) => {
@@ -137,16 +142,31 @@ class I18next extends EventEmitter {
     if (this.language && this.options.preload.indexOf(this.language) < 0) this.options.preload.unshift(this.language)
 
     this.isInitialized = true
-
     if (this.options.preload.length > 0) {
       const toLoad = this.options.preload.reduce((prev, curr) => {
         prev[curr] = this.store.getSeenNamespaces()
         return prev
       }, {})
-      await this.load(toLoad)
+
+      if (this.options.initImmediate === false) {
+        for (const hook of this.readHooks) {
+          const read = hook(toLoad)
+          if (!read) continue
+          Object.keys(read).forEach((lng) => {
+            Object.keys(read[lng]).forEach((ns) => {
+              this.store.addResourceBundle(lng, ns, read[lng][ns])
+              this.logger.log(`loaded namespace ${ns} for language ${lng}`, read[lng][ns])
+            })
+          })
+          this.emit('loaded', toLoad)
+        }
+      } else {
+        await this.load(toLoad)
+      }
     }
 
-    await this.changeLanguage(this.language)
+    if (this.options.initImmediate === false) this.changeLanguage(this.language)
+    else await this.changeLanguage(this.language)
 
     this.logger.log('initialized', this.options)
     this.emit('initialized', this)

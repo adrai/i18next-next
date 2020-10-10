@@ -164,6 +164,35 @@ describe('i18next', () => {
     should(translated).eql('a value for de/translation from old backend')
   })
 
+  it('wrap old backend module with initImmediate = false', () => {
+    class Backend {
+      constructor (services, options = {}, allOptions = {}) {
+        this.services = services
+        this.options = options
+        this.allOptions = allOptions
+        this.type = 'backend'
+        this.init(services, options, allOptions)
+      }
+
+      init (services, options = {}, allOptions = {}) {
+        this.services = services
+        this.options = options
+        this.allOptions = allOptions
+      }
+
+      read (lng, ns, callback) {
+        callback(null, {
+          key: `a value for ${lng}/${ns} from old backend`
+        })
+      }
+    }
+    const i18nextInstance = i18next({ lng: 'en', initImmediate: false })
+    i18nextInstance.use(compatibilityLayer(Backend, { onlyBackend: 'options' }))
+    i18nextInstance.init()
+    const translated = i18nextInstance.t('key')
+    should(translated).eql('a value for en/translation from old backend')
+  })
+
   it('changeLanguage and languageDetector', async () => {
     const cachedLanguages = []
     class LanguageDetector {

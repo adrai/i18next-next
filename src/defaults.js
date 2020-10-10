@@ -17,6 +17,7 @@ const escape = (data) => {
 export function getDefaults () {
   return {
     debug: false,
+    initImmediate: true,
     pluralOptionProperty: 'count',
     contextOptionProperty: 'context',
     defaultNS: 'translation',
