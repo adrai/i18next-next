@@ -79,7 +79,7 @@ describe('i18next', () => {
         }
       }
     }))
-    i18nextInstance.addHook('translate', (key, ns, lng, res) => res[lng][ns].prefixed[`${key}`])
+    i18nextInstance.addHook('resolveKey', (key, ns, lng, res) => res[lng][ns].prefixed[`${key}`])
     await i18nextInstance.init()
     const translated = i18nextInstance.t('key', { count: 3 })
     should(translated).eql('other values')
@@ -99,7 +99,7 @@ describe('i18next', () => {
             }
           }
         }))
-        i18n.addHook('translate', (key, ns, lng, res) => res[lng][ns].prefixed[`${key}`])
+        i18n.addHook('resolveKey', (key, ns, lng, res) => res[lng][ns].prefixed[`${key}`])
       }
     })
     await i18nextInstance.init()
@@ -332,7 +332,7 @@ describe('i18next', () => {
         }
       }
     }))
-    i18nextInstance.addHook('interpolate', (str, data, options) => {
+    i18nextInstance.addHook('interpolate', (str, data, lng, options) => {
       const regexp = new RegExp('_(.+?)_', 'g')
       let match, value
       while ((match = regexp.exec(str))) {
@@ -436,5 +436,27 @@ describe('i18next', () => {
     should(translated).eql('The page was not found.')
     translated = i18nextInstance.t(['error.502', 'error.unspecific'])
     should(translated).eql('Something went wrong.')
+  })
+
+  it('formatting', async () => {
+    const i18nextInstance = i18next({
+      lng: 'en',
+      interpolation: {
+        format: (value, format, lng) => {
+          if (format === 'uppercase') return value.toUpperCase()
+          return value
+        }
+      }
+    })
+    i18nextInstance.addHook('loadResources', () => ({
+      en: {
+        translation: {
+          key: '{{text, uppercase}} just uppercased'
+        }
+      }
+    }))
+    await i18nextInstance.init()
+    const translated = i18nextInstance.t('key', { text: 'can you hear me' })
+    should(translated).eql('CAN YOU HEAR ME just uppercased')
   })
 })

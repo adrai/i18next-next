@@ -55,8 +55,8 @@ const internalApi = {
     }
   },
 
-  runTranslateHooks: (instance) => (key, ns, lng, options) => {
-    for (const hook of instance.translateHooks) {
+  runResolveKeyHooks: (instance) => (key, ns, lng, options) => {
+    for (const hook of instance.resolveKeyHooks) {
       const resolvedValue = hook(key, ns, lng, instance.store.getData(), options)
       if (resolvedValue !== undefined) return resolvedValue
     }
@@ -106,9 +106,9 @@ const internalApi = {
     instance.addI18nFormatLookupKeysHooks.forEach((hook) => hook(finalKeys, key, code, ns, options))
   },
 
-  runInterpolateHooks: (instance) => (res, data, options) => {
+  runInterpolateHooks: (instance) => (res, data, lng, options) => {
     for (const hook of instance.interpolateHooks) {
-      const interpolated = hook(res, data, options)
+      const interpolated = hook(res, data, lng, options)
       if (interpolated !== undefined && interpolated !== res) return interpolated
     }
     return res
@@ -190,7 +190,7 @@ const internalApi = {
           let possibleKey
           while ((possibleKey = finalKeys.pop()) && !internalApi.isValidLookup(instance)(found)) {
             exactUsedKey = possibleKey
-            found = internalApi.runTranslateHooks(instance)(possibleKey, ns, code, options)
+            found = internalApi.runResolveKeyHooks(instance)(possibleKey, ns, code, options)
           }
         })
       })
@@ -199,7 +199,7 @@ const internalApi = {
     return { res: found, usedKey, exactUsedKey, usedLng, usedNS }
   },
 
-  extendTranslation: (instance) => (res, key, options = {}, resolved) => {
+  extendTranslation: (instance) => (res, key, resolved, options = {}) => {
     if (res === undefined) return res
 
     const newRes = internalApi.runParseI18nFormatHooks(instance)(
@@ -214,7 +214,7 @@ const internalApi = {
     if (res === newRes && !options.skipInterpolation) {
       let data = options.replace && typeof options.replace !== 'string' ? options.replace : options
       if (instance.options.interpolation.defaultVariables) data = { ...instance.options.interpolation.defaultVariables, ...data }
-      res = internalApi.runInterpolateHooks(instance)(res, data, options)
+      res = internalApi.runInterpolateHooks(instance)(res, data, options.lng || instance.language, options)
     } else {
       res = newRes
     }

@@ -21,7 +21,9 @@ class I18next extends EventEmitter {
       }
       this[`${name}Hooks`] = []
     })
-    this.options = { ...getDefaults(), ...options }
+    const defOpt = getDefaults()
+    this.options = { ...defOpt, ...options }
+    if (options.interpolation) this.options = { ...this.options, interpolation: { ...defOpt.interpolation, ...options.interpolation } }
     this.language = this.options.lng
     this.store = new ResourceStore({}, this.options)
     this.languageUtils = new LanguageUtils(this.options)
@@ -109,11 +111,11 @@ class I18next extends EventEmitter {
       return pr.resolvedOptions().pluralCategories.map((form) => `${key}${this.options.pluralSeparator}${form}`)
     })
     this.addHook('resolveContext', (context, key, options) => `${key}${this.options.contextSeparator}${context}`)
-    this.addHook('translate', (key, ns, lng, res, options) => deepFind(res[lng][ns], key))
+    this.addHook('resolveKey', (key, ns, lng, res, options) => deepFind(res[lng][ns], key))
     this.addHook('bestMatchFromCodes', (lngs) => this.languageUtils.getBestMatchFromCodes(lngs))
     this.addHook('fallbackCodes', (fallbackLng, lng) => this.languageUtils.getFallbackCodes(fallbackLng, lng))
     this.addHook('resolveHierarchy', (lng, fallbackLng) => this.languageUtils.toResolveHierarchy(lng, fallbackLng))
-    this.addHook('interpolate', (value, data, options) => this.interpolator.interpolate(value, data, options))
+    this.addHook('interpolate', (value, data, lng, options) => this.interpolator.interpolate(value, data, lng, options))
 
     this.services.languageUtils = {
       ...this.services.languageUtils,
@@ -333,7 +335,7 @@ class I18next extends EventEmitter {
     res = internalApi.handleMissing(this)(res, resExactUsedKey, key, ns, lng, options)
 
     // extend
-    res = internalApi.extendTranslation(this)(res, keys, options, resolved)
+    res = internalApi.extendTranslation(this)(res, keys, resolved, options)
 
     return res
   }

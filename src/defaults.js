@@ -50,6 +50,8 @@ export function getDefaults () {
     //   return ret
     // },
     interpolation: {
+      format: (value, format, lng, options) => value,
+      formatSeparator: ',',
       escapeValue: true,
       prefix: '{{',
       suffix: '}}',
