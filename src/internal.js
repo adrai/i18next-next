@@ -16,7 +16,7 @@ const internalApi = {
   runDetectLanguageHooks: (instance) => async () => {
     for (const hook of instance.detectLanguageHooks) {
       const ret = hook()
-      let lngs = await (ret && ret.then ? ret : Promise.resolve(ret))
+      let lngs = await (ret && typeof ret.then === 'function' ? ret : Promise.resolve(ret))
       if (lngs && typeof lngs === 'string') lngs = [lngs]
       if (lngs) return lngs
     }

@@ -108,11 +108,19 @@ class I18next extends EventEmitter {
 
     if (this.options.initImmediate === false) {
       const allResources = this.loadResourcesHooks.map((hook) => hook(this.options))
+      const foundIndex = allResources.findIndex((r) => r && typeof r.then === 'function')
+      if (foundIndex > -1) {
+        const msg = `You set initImmediate to false but are using an asynchronous loadResources hook (${foundIndex + 1}. hook)`
+        this.logger.error(msg, this.loadResourcesHooks[foundIndex].toString())
+        throw new Error(msg)
+      }
       const resources = allResources.reduce((prev, curr) => ({ ...prev, ...curr }), {})
       this.store.setData(resources)
+      this.logger.log('set data', resources)
     } else {
       const resources = await internalApi.runLoadResourcesHooks(this)()
       this.store.setData(resources)
+      this.logger.log('set data', resources)
     }
 
     this.addHook('resolvePlural', (count, key, lng, options) => `${key}${this.options.pluralSeparator}${new Intl.PluralRules(lng, { type: options.ordinal ? 'ordinal' : 'cardinal' }).select(count)}`)
@@ -153,6 +161,11 @@ class I18next extends EventEmitter {
       if (this.options.initImmediate === false) {
         for (const hook of this.readHooks) {
           const read = hook(toLoad)
+          if (read && typeof read.then === 'function') {
+            const msg = `You set initImmediate to false but are using an asynchronous read hook (${this.readHooks.indexOf(hook) + 1}. hook)`
+            this.logger.error(msg, hook.toString())
+            throw new Error(msg)
+          }
           if (!read) continue
           Object.keys(read).forEach((lng) => {
             Object.keys(read[lng]).forEach((ns) => {
@@ -185,7 +198,7 @@ class I18next extends EventEmitter {
 
     for (const hook of this.readHooks) {
       const ret = hook(toLoad)
-      const read = await (ret && ret.then ? ret : Promise.resolve(ret))
+      const read = await (ret && typeof ret.then === 'function' ? ret : Promise.resolve(ret))
       if (!read) continue
       Object.keys(read).forEach((lng) => {
         Object.keys(read[lng]).forEach((ns) => {
@@ -272,6 +285,7 @@ class I18next extends EventEmitter {
 
     lng = typeof lng === 'string' ? lng : internalApi.runBestMatchFromCodesHooks(this)(lng)
     if (!lng) return
+    if (lng === this.language) return
 
     this.emit('languageChanging', lng)
 

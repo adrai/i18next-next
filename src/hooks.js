@@ -22,6 +22,6 @@ export const hookNames = [
 export const runHooks = async (hooks, args) => {
   return Promise.all(hooks.map((handle) => {
     const ret = handle(...args)
-    return ret && ret.then ? ret : Promise.resolve(ret)
+    return ret && typeof ret.then === 'function' ? ret : Promise.resolve(ret)
   }))
 }
