@@ -32,7 +32,10 @@ class I18next extends EventEmitter {
     this.services = {
       resourceStore: this.store,
       languageUtils: this.languageUtils,
-      interpolator: this.interpolator
+      interpolator: this.interpolator,
+      utils: {
+        isNamespaceLoaded: this.isNamespaceLoaded.bind(this)
+      }
     }
 
     // append api
@@ -259,6 +262,10 @@ class I18next extends EventEmitter {
     this.logger.log('languageChanged', lng)
   }
 
+  setDefaultNamespace (ns) {
+    this.options.defaultNS = ns
+  }
+
   exists (key, options = {}) {
     const resolved = internalApi.resolve(this)(key, options)
     return resolved && resolved.res !== undefined
@@ -362,6 +369,21 @@ class I18next extends EventEmitter {
     res = internalApi.extendTranslation(this)(res, keys, resolved, options)
 
     return res
+  }
+
+  async cloneInstance (options = {}) {
+    const mergedOptions = { ...this.options, ...options, ...{ isClone: true } }
+    const clone = new I18next(mergedOptions)
+    const membersToCopy = ['store', 'services', 'language']
+    membersToCopy.forEach((m) => {
+      clone[m] = this[m]
+    })
+    clone.services = { ...this.services }
+    clone.services.utils = {
+      isNamespaceLoaded: clone.isNamespaceLoaded.bind(clone)
+    }
+    await clone.init()
+    return clone
   }
 }
 

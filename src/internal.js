@@ -253,7 +253,7 @@ const internalApi = {
         instance.logger.log(
           updateMissing ? 'updateKey' : 'missingKey',
           lng,
-          options.ns,
+          ns,
           key,
           updateMissing ? options.defaultValue : res
         )
@@ -271,11 +271,11 @@ const internalApi = {
         if (instance.options.saveMissing) {
           const send = async (l, k) => {
             if (updateMissing) {
-              await internalApi.runHandleUpdateKeyHooks(instance)(k, options.ns, l, res, options)
+              await internalApi.runHandleUpdateKeyHooks(instance)(k, ns, l, res, options)
             } else {
-              await internalApi.runHandleMissingKeyHooks(instance)(k, options.ns, l, options.defaultValue, options)
+              await internalApi.runHandleMissingKeyHooks(instance)(k, ns, l, options.defaultValue, options)
             }
-            instance.emit('missingKey', l, options.ns, k, res)
+            instance.emit('missingKey', l, ns, k, res)
           }
 
           const needsPluralHandling = options[instance.options.pluralOptionProperty] !== undefined && typeof options[instance.options.pluralOptionProperty] !== 'string'

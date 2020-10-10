@@ -8,6 +8,7 @@ export function compatibilityLayer (m, opt = {}) {
   const module = createClassOnDemand(m)
   return { // opt are module specific options... not anymore passed as module options on global i18next options
     register: (i18n) => {
+      i18n.services.utils.hasLoadedNamespace = i18n.services.utils.isNamespaceLoaded
       if (module.init && module.type !== '3rdParty') module.init(i18n.services, opt, i18n.options)
       if (module.type === 'backend') {
         const read = (lng, ns) => new Promise((resolve, reject) => module.read(lng, ns, (err, ret) => err ? reject(err) : resolve(ret)))
