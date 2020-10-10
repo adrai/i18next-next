@@ -54,7 +54,7 @@ export function compatibilityLayer (m, opt = {}) {
       if (module.type === 'i18nFormat') {
         if (module.parse) i18n.addHook('parseI18nFormat', (res, options, lng, ns, key, info) => module.parse(res, options, lng, ns, key, info))
         if (module.addLookupKeys) i18n.addHook('addI18nFormatLookupKeys', (finalKeys, key, code, ns, options) => module.addLookupKeys(finalKeys, key, code, ns, options))
-        if (module.getResource) this.addHook('translate', (key, ns, lng, res, options) => module.getResource(lng, ns, key, options))
+        if (module.getResource) i18n.addHook('resolveKey', (key, ns, lng, res, options) => module.getResource(lng, ns, key, options))
       }
       if (module.type === '3rdParty') {
         i18n.on('initialized', () => module.init(i18n))
