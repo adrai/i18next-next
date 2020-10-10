@@ -159,6 +159,9 @@ describe('i18next', () => {
     await i18nextInstance.loadNamespace('translation', 'de')
     translated = i18nextInstance.t('key', { lng: 'de' })
     should(translated).eql('a value for de/translation from old backend')
+    const fixedT = i18nextInstance.getFixedT('de')
+    translated = fixedT('key')
+    should(translated).eql('a value for de/translation from old backend')
   })
 
   it('changeLanguage and languageDetector', async () => {
@@ -416,6 +419,9 @@ describe('i18next', () => {
     translated = i18nextInstance.t('ns2:key')
     should(translated).eql('from ns2')
     translated = i18nextInstance.t('ns2:key2')
+    should(translated).eql('value 2 from ns2')
+    const fixedT = i18nextInstance.getFixedT(null, 'ns2')
+    translated = fixedT('key2')
     should(translated).eql('value 2 from ns2')
   })
 

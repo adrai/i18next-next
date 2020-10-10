@@ -264,6 +264,30 @@ class I18next extends EventEmitter {
     return resolved && resolved.res !== undefined
   }
 
+  getFixedT (lng, ns) {
+    const fixedT = (key, opts, ...rest) => {
+      const options = { ...opts }
+      // let options
+      // if (typeof opts !== 'object') {
+      //   options = this.options.overloadTranslationOptionHandler([key, opts].concat(rest))
+      // } else {
+      //   options = { ...opts }
+      // }
+
+      options.lng = options.lng || fixedT.lng
+      options.lngs = options.lngs || fixedT.lngs
+      options.ns = options.ns || fixedT.ns
+      return this.t(key, options)
+    }
+    if (typeof lng === 'string') {
+      fixedT.lng = lng
+    } else {
+      fixedT.lngs = lng
+    }
+    fixedT.ns = ns
+    return fixedT
+  }
+
   t (keys, options = {}) {
     throwIf.notInitializedFn(this)('t')
 
