@@ -22,6 +22,7 @@ class I18next extends EventEmitter {
       this[`${name}Hooks`] = []
     })
     const defOpt = getDefaults()
+    this.loading = {}
     this.options = { ...defOpt, ...options }
     if (options.interpolation) this.options = { ...this.options, interpolation: { ...defOpt.interpolation, ...options.interpolation } }
     this.language = this.options.lng
@@ -197,13 +198,29 @@ class I18next extends EventEmitter {
 
   async load (toLoad) {
     throwIf.notInitializedFn(this)('load')
-
+    Object.keys(toLoad).forEach((lng) => {
+      toLoad[lng].forEach((ns) => {
+        this.loading[lng] = this.loading[lng] || []
+        if (this.loading[lng].indexOf(ns) > -1) {
+          if (toLoad[lng]) {
+            toLoad[lng].splice(toLoad[lng].indexOf(ns), 1)
+            if (toLoad[lng].length === 0) delete toLoad[lng]
+          }
+          this.logger.log(`already loading ${lng}/${ns}, so will ignore the request to load again`)
+        } else {
+          this.loading[lng].push(ns)
+        }
+      })
+    })
+    if (Object.keys(toLoad).length === 0) return
     for (const hook of this.readHooks) {
       const ret = hook(toLoad)
       const read = await (ret && typeof ret.then === 'function' ? ret : Promise.resolve(ret))
       if (!read) continue
       Object.keys(read).forEach((lng) => {
         Object.keys(read[lng]).forEach((ns) => {
+          this.loading[lng] = this.loading[lng] || []
+          if (this.loading[lng].indexOf(ns) > -1) this.loading[lng].splice(this.loading[lng].indexOf(ns), 1)
           this.store.addResourceBundle(lng, ns, read[lng][ns])
           this.logger.log(`loaded namespace ${ns} for language ${lng}`, read[lng][ns])
         })
