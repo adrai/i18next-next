@@ -286,6 +286,13 @@ const internalApi = {
         }
 
         if (instance.options.saveMissing) {
+          if (!instance.isNamespaceLoaded(ns)) {
+            instance.logger.warn(
+              `did not save key "${key}" as the namespace "${ns}" was not yet loaded`,
+              'This means something IS WRONG in your setup. You access the t function before i18next.init / i18next.loadNamespace / i18next.changeLanguage was done. Wait for the Promise to resolve before accessing it!!!'
+            )
+            return
+          }
           const send = async (l, k) => {
             if (updateMissing) {
               await internalApi.runHandleUpdateKeyHooks(instance)(k, ns, l, res, options)
