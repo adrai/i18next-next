@@ -124,15 +124,15 @@ class I18next extends EventEmitter {
       this.logger.log('set data', resources)
     }
 
-    this.addHook('resolve', (key, options) => internalApi.resolve(this)(key, options))
     this.addHook('translate', (key, ns, lng, options) => internalApi.translate(this)(key, ns, lng, options))
+    this.addHook('resolve', (key, options) => internalApi.resolve(this)(key, options))
+    this.addHook('resolveKey', (key, ns, lng, res, options) => deepFind(res[lng][ns], key))
     this.addHook('resolvePlural', (count, key, lng, options) => `${key}${this.options.pluralSeparator}${new Intl.PluralRules(lng, { type: options.ordinal ? 'ordinal' : 'cardinal' }).select(count)}`)
     this.addHook('formPlurals', (key, lng, options) => {
       const pr = new Intl.PluralRules(lng, { type: options.ordinal ? 'ordinal' : 'cardinal' })
       return pr.resolvedOptions().pluralCategories.map((form) => `${key}${this.options.pluralSeparator}${form}`)
     })
     this.addHook('resolveContext', (context, key, options) => `${key}${this.options.contextSeparator}${context}`)
-    this.addHook('resolveKey', (key, ns, lng, res, options) => deepFind(res[lng][ns], key))
     this.addHook('bestMatchFromCodes', (lngs) => this.languageUtils.getBestMatchFromCodes(lngs))
     this.addHook('fallbackCodes', (fallbackLng, lng) => this.languageUtils.getFallbackCodes(fallbackLng, lng))
     this.addHook('resolveHierarchy', (lng, fallbackLng) => this.languageUtils.toResolveHierarchy(lng, fallbackLng))

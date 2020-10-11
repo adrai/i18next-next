@@ -67,6 +67,26 @@ describe('i18next', () => {
     should(translated).eql('values from other resolver')
   })
 
+  it('default plural resolver', async () => {
+    const i18nextInstance = i18next({ lng: 'en' })
+    i18nextInstance
+      .addHook('loadResources', () => ({
+        en: {
+          translation: {
+            key: 'a value',
+            key_other: '{{count}} values'
+          }
+        }
+      }))
+    await i18nextInstance.init()
+    let translated = i18nextInstance.t('key')
+    should(translated).eql('a value')
+    translated = i18nextInstance.t('key', { count: 3 })
+    should(translated).eql('3 values')
+    translated = i18nextInstance.t('key', { count: 1 })
+    should(translated).eql('a value')
+  })
+
   it('custom translator', async () => {
     const i18nextInstance = i18next({ lng: 'en' })
     i18nextInstance.addHook('loadResources', () => ({

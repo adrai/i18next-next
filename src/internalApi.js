@@ -348,7 +348,7 @@ const internalApi = {
             const deepKey = `${newKeyToUse}${keySeparator}${m}`
             copy[m] = instance.t(deepKey, {
               ...options,
-              ...{ joinArrays: false, ns }
+              ...{ joinArrays: false, namespace }
             })
             if (copy[m] === deepKey) copy[m] = res[m] // if nothing found use orginal value as fallback
           }
@@ -358,7 +358,7 @@ const internalApi = {
     }
 
     // handle missing
-    res = internalApi.handleMissing(instance)(res, resExactUsedKey, key, ns, lng, options)
+    res = internalApi.handleMissing(instance)(res, resExactUsedKey, key, namespace, lng, options)
 
     // extend
     res = internalApi.extendTranslation(instance)(res, keys, resolved, options)
