@@ -6,6 +6,7 @@ export const hookNames = [
   'formPlurals',
   'resolveContext',
   'resolveKey',
+  'resolve',
   'read',
   'handleMissingKey',
   'handleUpdateKey',

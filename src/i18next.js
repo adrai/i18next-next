@@ -7,7 +7,7 @@ import LanguageUtils from './LanguageUtils.js'
 import Interpolator from './Interpolator.js'
 import ResourceStore from './ResourceStore.js'
 import throwIf from './throwIf.js'
-import internalApi from './internal.js'
+import internalApi from './internalApi.js'
 
 class I18next extends EventEmitter {
   constructor (options = {}) {
@@ -123,6 +123,7 @@ class I18next extends EventEmitter {
       this.logger.log('set data', resources)
     }
 
+    this.addHook('resolve', (key, options) => internalApi.resolve(this)(key, options))
     this.addHook('translate', (key, ns, lng, options) => internalApi.translate(this)(key, ns, lng, options))
     this.addHook('resolvePlural', (count, key, lng, options) => `${key}${this.options.pluralSeparator}${new Intl.PluralRules(lng, { type: options.ordinal ? 'ordinal' : 'cardinal' }).select(count)}`)
     this.addHook('formPlurals', (key, lng, options) => {
@@ -304,8 +305,7 @@ class I18next extends EventEmitter {
   }
 
   exists (key, options = {}) {
-    const resolved = internalApi.resolve(this)(key, options)
-    return resolved && resolved.res !== undefined
+    return !!internalApi.runResolveHooks(this)(key, options)
   }
 
   getFixedT (lng, ns) {

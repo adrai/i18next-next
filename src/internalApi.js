@@ -55,6 +55,13 @@ const internalApi = {
     }
   },
 
+  runResolveHooks: (instance) => (key, options) => {
+    for (const hook of instance.resolveHooks) {
+      const resolved = hook(key, options)
+      if (resolved !== undefined) return resolved
+    }
+  },
+
   runResolveKeyHooks: (instance) => (key, ns, lng, options) => {
     for (const hook of instance.resolveKeyHooks) {
       const resolvedValue = hook(key, ns, lng, instance.store.getData(), options)
@@ -178,6 +185,7 @@ const internalApi = {
 
         codes.forEach((code) => {
           if (internalApi.isValidLookup(instance)(found)) return
+          usedLng = code
 
           const finalKeys = [key]
           exactUsedKey = finalKeys[finalKeys.length - 1]
@@ -204,6 +212,7 @@ const internalApi = {
       })
     })
 
+    if (found === undefined) return
     return { res: found, usedKey, exactUsedKey, usedLng, usedNS }
   },
 
@@ -304,10 +313,9 @@ const internalApi = {
   translate: (instance) => (keys, ns, lng, options) => {
     // non valid keys handling
     if (keys === undefined || keys === null) return ''
-    if (!Array.isArray(keys)) keys = [String(keys)]
 
     // get namespace(s)
-    const { key, namespaces } = internalApi.extractFromKey(instance)(keys[keys.length - 1], options)
+    const { key, namespaces } = internalApi.extractFromKey(instance)(typeof keys === 'string' ? keys : keys[keys.length - 1], options)
     const namespace = namespaces[namespaces.length - 1]
 
     // return key on CIMode
@@ -321,7 +329,8 @@ const internalApi = {
     }
 
     // resolve
-    const resolved = internalApi.resolve(instance)(keys, options)
+    let resolved = internalApi.runResolveHooks(instance)(keys, options)
+    if (typeof resolved !== 'object') resolved = { res: resolved, usedKey: key, exactUsedKey: key, usedLng: lng }
     let res = resolved && resolved.res
     const resUsedKey = (resolved && resolved.usedKey) || key
     const resExactUsedKey = (resolved && resolved.exactUsedKey) || key
