@@ -44,6 +44,148 @@ describe('i18next', () => {
     should(called).eql(true)
   })
 
+  it('basic stuff', async () => {
+    const i18nextInstance = i18next({ lng: 'en' })
+    i18nextInstance
+      .addHook('loadResources', () => ({
+        en: {
+          translation: {
+            key: 'a value'
+          }
+        }
+      }))
+    await i18nextInstance.init()
+    const exists = i18nextInstance.exists('key')
+    should(exists).eql(true)
+    const translated = i18nextInstance.t('key')
+    should(translated).eql('a value')
+  })
+
+  it('custom resolver', async () => {
+    const i18nextInstance = i18next({ lng: 'en' })
+    i18nextInstance.addHook('loadResources', () => ({
+      en: {
+        translation: {
+          prefixed: {
+            key: 'a value'
+          }
+        }
+      }
+    }))
+    i18nextInstance.addHook('resolve', (key, data, options) => data[options.lng || i18nextInstance.language][options.ns || i18nextInstance.options.defaultNS].prefixed[`${key}`])
+    await i18nextInstance.init()
+    const translated = i18nextInstance.t('key')
+    should(translated).eql('a value')
+  })
+
+  it('inline resources with initImmediate = false', () => {
+    const i18nextInstance = i18next({ lng: 'en', initImmediate: false })
+    i18nextInstance.addHook('read', (toLoad) => {
+      const res = {}
+      Object.keys(toLoad).forEach((lng) => {
+        toLoad[lng].forEach((ns) => {
+          res[lng] = res[lng] || {}
+          res[lng][ns] = {
+            key: `a value for ${lng}/${ns}`
+          }
+        })
+      })
+      return res
+    })
+    i18nextInstance.init()
+    const translated = i18nextInstance.t('key')
+    should(translated).eql('a value for en/translation')
+  })
+
+  describe('old backend module', () => {
+    class Backend {
+      constructor (services, options = {}, allOptions = {}) {
+        this.services = services
+        this.options = options
+        this.allOptions = allOptions
+        this.type = 'backend'
+        this.init(services, options, allOptions)
+      }
+
+      init (services, options = {}, allOptions = {}) {
+        this.services = services
+        this.options = options
+        this.allOptions = allOptions
+      }
+
+      read (lng, ns, callback) {
+        callback(null, {
+          key: `a value for ${lng}/${ns} from old backend`
+        })
+      }
+    }
+
+    it('wrap old backend module', async () => {
+      const i18nextInstance = i18next({ lng: 'en' })
+      i18nextInstance.use(compatibilityLayer(Backend, { onlyBackend: 'options' }))
+      await i18nextInstance.init()
+      let translated = i18nextInstance.t('key')
+      should(translated).eql('a value for en/translation from old backend')
+      await i18nextInstance.loadNamespace('translation', 'de')
+      translated = i18nextInstance.t('key', { lng: 'de' })
+      should(translated).eql('a value for de/translation from old backend')
+      const fixedT = i18nextInstance.getFixedT('de')
+      translated = fixedT('key')
+      should(translated).eql('a value for de/translation from old backend')
+    })
+
+    it('wrap old backend module with initImmediate = false', () => {
+      const i18nextInstance = i18next({ lng: 'en', initImmediate: false })
+      i18nextInstance.use(compatibilityLayer(Backend, { onlyBackend: 'options' }))
+      i18nextInstance.init()
+      const translated = i18nextInstance.t('key')
+      should(translated).eql('a value for en/translation from old backend')
+    })
+  })
+
+  it('read (like backend connector)', async () => {
+    const i18nextInstance = i18next({ lng: 'en' })
+    i18nextInstance.addHook('read', (toLoad) => {
+      const res = {}
+      Object.keys(toLoad).forEach((lng) => {
+        toLoad[lng].forEach((ns) => {
+          res[lng] = res[lng] || {}
+          res[lng][ns] = {
+            key: `a value for ${lng}/${ns}`
+          }
+        })
+      })
+      return res
+    })
+    await i18nextInstance.init()
+    let translated = i18nextInstance.t('key')
+    should(translated).eql('a value for en/translation')
+    await i18nextInstance.loadNamespace('translation', 'de')
+    translated = i18nextInstance.t('key', { lng: 'de' })
+    should(translated).eql('a value for de/translation')
+  })
+
+  it('use module', async () => {
+    const i18nextInstance = i18next({ lng: 'en' })
+    i18nextInstance.use({ // this would be a separate module, like a backend connector...
+      register: (i18n) => {
+        i18n.addHook('loadResources', () => ({
+          en: {
+            translation: {
+              prefixed: {
+                key: 'a value'
+              }
+            }
+          }
+        }))
+        i18n.addHook('resolveKey', (key, ns, lng, res) => res[lng][ns].prefixed[`${key}`])
+      }
+    })
+    await i18nextInstance.init()
+    const translated = i18nextInstance.t('key')
+    should(translated).eql('a value')
+  })
+
   it('custom plural resolver', async () => {
     const i18nextInstance = i18next({ lng: 'en' })
     i18nextInstance
@@ -87,149 +229,24 @@ describe('i18next', () => {
     should(translated).eql('a value')
   })
 
-  it('custom translator', async () => {
+  it('custom key resolver', async () => {
     const i18nextInstance = i18next({ lng: 'en' })
     i18nextInstance.addHook('loadResources', () => ({
       en: {
         translation: {
           prefixed: {
             key: 'a value',
-            key_other: 'other values'
+            key_other: '{{count}} values'
           }
         }
       }
     }))
     i18nextInstance.addHook('resolveKey', (key, ns, lng, res) => res[lng][ns].prefixed[`${key}`])
     await i18nextInstance.init()
-    const translated = i18nextInstance.t('key', { count: 3 })
-    should(translated).eql('other values')
-  })
-
-  it('use module', async () => {
-    const i18nextInstance = i18next({ lng: 'en' })
-    i18nextInstance.use({ // this would be a separate module, like a backend connector...
-      register: (i18n) => {
-        i18n.addHook('loadResources', () => ({
-          en: {
-            translation: {
-              prefixed: {
-                key: 'a value',
-                key_other: 'other values'
-              }
-            }
-          }
-        }))
-        i18n.addHook('resolveKey', (key, ns, lng, res) => res[lng][ns].prefixed[`${key}`])
-      }
-    })
-    await i18nextInstance.init()
-    const translated = i18nextInstance.t('key', { count: 3 })
-    should(translated).eql('other values')
-  })
-
-  it('read (like backend connector)', async () => {
-    const i18nextInstance = i18next({ lng: 'en' })
-    i18nextInstance.addHook('read', (toLoad) => {
-      const res = {}
-      Object.keys(toLoad).forEach((lng) => {
-        toLoad[lng].forEach((ns) => {
-          res[lng] = res[lng] || {}
-          res[lng][ns] = {
-            key: `a value for ${lng}/${ns}`
-          }
-        })
-      })
-      return res
-    })
-    await i18nextInstance.init()
     let translated = i18nextInstance.t('key')
-    should(translated).eql('a value for en/translation')
-    await i18nextInstance.loadNamespace('translation', 'de')
-    translated = i18nextInstance.t('key', { lng: 'de' })
-    should(translated).eql('a value for de/translation')
-  })
-
-  it('wrap old backend module', async () => {
-    class Backend {
-      constructor (services, options = {}, allOptions = {}) {
-        this.services = services
-        this.options = options
-        this.allOptions = allOptions
-        this.type = 'backend'
-        this.init(services, options, allOptions)
-      }
-
-      init (services, options = {}, allOptions = {}) {
-        this.services = services
-        this.options = options
-        this.allOptions = allOptions
-      }
-
-      read (lng, ns, callback) {
-        callback(null, {
-          key: `a value for ${lng}/${ns} from old backend`
-        })
-      }
-    }
-    const i18nextInstance = i18next({ lng: 'en' })
-    i18nextInstance.use(compatibilityLayer(Backend, { onlyBackend: 'options' }))
-    await i18nextInstance.init()
-    let translated = i18nextInstance.t('key')
-    should(translated).eql('a value for en/translation from old backend')
-    await i18nextInstance.loadNamespace('translation', 'de')
-    translated = i18nextInstance.t('key', { lng: 'de' })
-    should(translated).eql('a value for de/translation from old backend')
-    const fixedT = i18nextInstance.getFixedT('de')
-    translated = fixedT('key')
-    should(translated).eql('a value for de/translation from old backend')
-  })
-
-  it('wrap old backend module with initImmediate = false', () => {
-    class Backend {
-      constructor (services, options = {}, allOptions = {}) {
-        this.services = services
-        this.options = options
-        this.allOptions = allOptions
-        this.type = 'backend'
-        this.init(services, options, allOptions)
-      }
-
-      init (services, options = {}, allOptions = {}) {
-        this.services = services
-        this.options = options
-        this.allOptions = allOptions
-      }
-
-      read (lng, ns, callback) {
-        callback(null, {
-          key: `a value for ${lng}/${ns} from old backend`
-        })
-      }
-    }
-    const i18nextInstance = i18next({ lng: 'en', initImmediate: false })
-    i18nextInstance.use(compatibilityLayer(Backend, { onlyBackend: 'options' }))
-    i18nextInstance.init()
-    const translated = i18nextInstance.t('key')
-    should(translated).eql('a value for en/translation from old backend')
-  })
-
-  it('inline resources with initImmediate = false', () => {
-    const i18nextInstance = i18next({ lng: 'en', initImmediate: false })
-    i18nextInstance.addHook('read', (toLoad) => {
-      const res = {}
-      Object.keys(toLoad).forEach((lng) => {
-        toLoad[lng].forEach((ns) => {
-          res[lng] = res[lng] || {}
-          res[lng][ns] = {
-            key: `a value for ${lng}/${ns}`
-          }
-        })
-      })
-      return res
-    })
-    i18nextInstance.init()
-    const translated = i18nextInstance.t('key')
-    should(translated).eql('a value for en/translation')
+    should(translated).eql('a value')
+    translated = i18nextInstance.t('key', { count: 3 })
+    should(translated).eql('3 values')
   })
 
   it('changeLanguage and languageDetector', async () => {

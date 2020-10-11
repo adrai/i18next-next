@@ -1,39 +1,27 @@
 import baseLogger from './logger.js'
 import { getDefaults } from './defaults.js'
-import { hookNames } from './hooks.js'
-import { isIE10, deepFind, wait } from './utils.js'
+import { run } from './hooks.js'
+import { isIE10, wait, deepFind } from './utils.js'
 import EventEmitter from './EventEmitter.js'
-import LanguageUtils from './LanguageUtils.js'
-import Interpolator from './Interpolator.js'
 import ResourceStore from './ResourceStore.js'
 import throwIf from './throwIf.js'
-import internalApi from './internalApi.js'
+import defaultStack from './defaultStack.js'
 
 class I18next extends EventEmitter {
   constructor (options = {}) {
     super()
     if (isIE10) EventEmitter.call(this) // <=IE10 fix (unable to call parent constructor)
     this.isInitialized = false
-    hookNames.forEach((name) => {
-      if (name === 'postProcess') {
-        this[`${name}Hooks`] = {}
-        return
-      }
-      this[`${name}Hooks`] = []
-    })
     const defOpt = getDefaults()
     this.loading = {}
     this.options = { ...defOpt, ...options }
     if (options.interpolation) this.options = { ...this.options, interpolation: { ...defOpt.interpolation, ...options.interpolation } }
     this.language = this.options.lng
     this.store = new ResourceStore({}, this.options)
-    this.languageUtils = new LanguageUtils(this.options)
-    this.interpolator = new Interpolator(this.options.interpolation)
-    if (this.language) this.languages = this.languageUtils.toResolveHierarchy(this.language)
     this.services = {
       resourceStore: this.store,
-      languageUtils: this.languageUtils,
-      interpolator: this.interpolator,
+      languageUtils: {},
+      interpolator: {},
       utils: {
         isNamespaceLoaded: this.isNamespaceLoaded.bind(this)
       }
@@ -85,12 +73,14 @@ class I18next extends EventEmitter {
       hook = type
       type = undefined
     }
-    if (hookNames.indexOf(name) < 0) throw new Error(`${name} is not a valid hook!`)
+    // if (hookNames.indexOf(name) < 0) throw new Error(`${name} is not a valid hook!`)
     throwIf.alreadyInitializedFn(this)(`addHook(${name})`)
 
     if (type) {
+      this[`${name}Hooks`] = this[`${name}Hooks`] || {}
       this[`${name}Hooks`][type] = hook
     } else {
+      this[`${name}Hooks`] = this[`${name}Hooks`] || []
       this[`${name}Hooks`].push(hook)
     }
     return this
@@ -99,58 +89,54 @@ class I18next extends EventEmitter {
   async init () {
     throwIf.alreadyInitializedFn('Already initialized!')
 
-    if (this.options.initImmediate === false) internalApi.runExtendOptionsHooks(this)()
-    else await internalApi.runExtendOptionsHooks(this)()
+    if (this.options.initImmediate === false) run(this).extendOptionsHooks()
+    else await run(this).extendOptionsHooks()
     this.language = this.options.lng
 
     baseLogger.init(this.services.logger, this.options)
     this.logger = baseLogger
     this.services.logger = this.logger
 
-    if (this.options.initImmediate === false) {
-      const allResources = this.loadResourcesHooks.map((hook) => hook(this.options))
-      const foundIndex = allResources.findIndex((r) => r && typeof r.then === 'function')
-      if (foundIndex > -1) {
-        const msg = `You set initImmediate to false but are using an asynchronous loadResources hook (${foundIndex + 1}. hook)`
-        this.logger.error(msg, this.loadResourcesHooks[foundIndex].toString())
-        throw new Error(msg)
+    if (this.loadResourcesHooks) {
+      if (this.options.initImmediate === false) {
+        const allResources = this.loadResourcesHooks.map((hook) => hook(this.options))
+        const foundIndex = allResources.findIndex((r) => r && typeof r.then === 'function')
+        if (foundIndex > -1) {
+          const msg = `You set initImmediate to false but are using an asynchronous loadResources hook (${foundIndex + 1}. hook)`
+          this.logger.error(msg, this.loadResourcesHooks[foundIndex].toString())
+          throw new Error(msg)
+        }
+        const resources = allResources.reduce((prev, curr) => ({ ...prev, ...curr }), {})
+        this.store.setData(resources)
+        this.logger.log('set data', resources)
+      } else {
+        const resources = await run(this).loadResourcesHooks()
+        this.store.setData(resources)
+        this.logger.log('set data', resources)
       }
-      const resources = allResources.reduce((prev, curr) => ({ ...prev, ...curr }), {})
-      this.store.setData(resources)
-      this.logger.log('set data', resources)
-    } else {
-      const resources = await internalApi.runLoadResourcesHooks(this)()
-      this.store.setData(resources)
-      this.logger.log('set data', resources)
     }
 
-    this.addHook('translate', (key, ns, lng, options) => internalApi.translate(this)(key, ns, lng, options))
-    this.addHook('resolve', (key, options) => internalApi.resolve(this)(key, options))
-    this.addHook('resolveKey', (key, ns, lng, res, options) => deepFind(res[lng][ns], key))
-    this.addHook('resolvePlural', (count, key, lng, options) => `${key}${this.options.pluralSeparator}${new Intl.PluralRules(lng, { type: options.ordinal ? 'ordinal' : 'cardinal' }).select(count)}`)
-    this.addHook('formPlurals', (key, lng, options) => {
-      const pr = new Intl.PluralRules(lng, { type: options.ordinal ? 'ordinal' : 'cardinal' })
-      return pr.resolvedOptions().pluralCategories.map((form) => `${key}${this.options.pluralSeparator}${form}`)
-    })
-    this.addHook('resolveContext', (context, key, options) => `${key}${this.options.contextSeparator}${context}`)
-    this.addHook('bestMatchFromCodes', (lngs) => this.languageUtils.getBestMatchFromCodes(lngs))
-    this.addHook('fallbackCodes', (fallbackLng, lng) => this.languageUtils.getFallbackCodes(fallbackLng, lng))
-    this.addHook('resolveHierarchy', (lng, fallbackLng) => this.languageUtils.toResolveHierarchy(lng, fallbackLng))
-    this.addHook('interpolate', (value, data, lng, options) => this.interpolator.interpolate(value, data, lng, options))
+    this.use(defaultStack)
+    if (!this.resolveHooks || this.resolveHooks.length === 0) {
+      this.addHook('resolve', (key, data, options) => {
+        const { ns, lng } = this.extractFromKey(typeof key === 'string' ? key : key[key.length - 1], options)
+        return deepFind((data && data[lng] && data[lng][ns]) || {}, key)
+      })
+    }
 
     this.services.languageUtils = {
-      ...this.services.languageUtils,
-      getBestMatchFromCodes: internalApi.runBestMatchFromCodesHooks(this),
-      getFallbackCodes: internalApi.runFallbackCodesHooks(this),
-      toResolveHierarchy: internalApi.runResolveHierarchyHooks(this)
+      // ...this.services.languageUtils,
+      getBestMatchFromCodes: run(this).bestMatchFromCodesHooks,
+      getFallbackCodes: run(this).fallbackCodesHooks,
+      toResolveHierarchy: run(this).resolveHierarchyHooks
     }
 
     this.services.interpolator = {
-      ...this.services.interpolator,
-      interpolate: internalApi.runInterpolateHooks(this)
+      // ...this.services.interpolator,
+      interpolate: run(this).interpolateHooks
     }
 
-    if (this.language) this.languages = internalApi.runResolveHierarchyHooks(this)(this.language)
+    if (this.language) this.languages = run(this).resolveHierarchyHooks(this.language)
 
     if (this.language && this.options.preload.indexOf(this.language) < 0) this.options.preload.unshift(this.language)
 
@@ -189,7 +175,7 @@ class I18next extends EventEmitter {
     if (!this.options.isClone) this.logger.log('initialized', this.options)
     this.emit('initialized', this)
 
-    if (!this.language && this.detectLanguageHooks.length === 0) {
+    if (!this.language && (!this.detectLanguageHooks || this.detectLanguageHooks.length === 0)) {
       this.logger.warn('init: no lng is defined and no languageDetector is used')
     }
 
@@ -198,6 +184,8 @@ class I18next extends EventEmitter {
 
   async load (toLoad, tried = 0, delay = 350) {
     throwIf.notInitializedFn(this)('load')
+    if (!this.readHooks) return
+
     Object.keys(toLoad).forEach((lng) => {
       toLoad[lng].forEach((ns) => {
         this.loading[lng] = this.loading[lng] || []
@@ -285,7 +273,7 @@ class I18next extends EventEmitter {
       const toLoad = {
         [lng]: ns
       }
-      const lngs = internalApi.runResolveHierarchyHooks(this)(lng)
+      const lngs = run(this).resolveHierarchyHooks(lng)
       lngs.forEach(l => {
         if (!toLoad[l]) toLoad[l] = ns
       })
@@ -299,7 +287,7 @@ class I18next extends EventEmitter {
     }
 
     // at least load fallbacks in this case
-    const fallbacks = internalApi.runFallbackCodesHooks(this)(this.options.fallbackLng)
+    const fallbacks = run(this).fallbackCodesHooks(this.options.fallbackLng)
     if (fallbacks.length === 0) throw new Error('There is no language defined!')
     return fallbacks.reduce((prev, curr) => {
       prev[curr] = ns
@@ -331,9 +319,9 @@ class I18next extends EventEmitter {
   async changeLanguage (lng) {
     throwIf.notInitializedFn(this)('changeLanguage')
 
-    if (!lng) lng = await internalApi.runDetectLanguageHooks(this)()
+    if (!lng) lng = await run(this).detectLanguageHooks()
 
-    lng = typeof lng === 'string' ? lng : internalApi.runBestMatchFromCodesHooks(this)(lng)
+    lng = typeof lng === 'string' ? lng : run(this).bestMatchFromCodesHooks(lng)
     if (!lng) return
     if (lng === this.language) return
 
@@ -341,8 +329,8 @@ class I18next extends EventEmitter {
 
     await this.loadLanguage(lng)
     this.language = lng
-    this.languages = internalApi.runResolveHierarchyHooks(this)(this.language)
-    await internalApi.runCacheLanguageHooks(this)(this.language)
+    this.languages = run(this).resolveHierarchyHooks(this.language)
+    await run(this).cacheLanguageHooks(this.language)
 
     this.emit('languageChanged', lng)
     this.logger.log('languageChanged', lng)
@@ -352,8 +340,66 @@ class I18next extends EventEmitter {
     this.options.defaultNS = ns
   }
 
+  extractFromKey (key, options = {}) {
+    const nsSeparator = options.nsSeparator !== undefined ? options.nsSeparator : this.options.nsSeparator
+    const keySeparator = options.keySeparator !== undefined ? options.keySeparator : this.options.keySeparator
+    let namespaces = options.ns || this.options.defaultNS
+    if (nsSeparator && key.indexOf(nsSeparator) > -1 && keySeparator) {
+      const parts = key.split(nsSeparator)
+      if (nsSeparator !== keySeparator || (nsSeparator === keySeparator && this.options.ns && this.options.ns.indexOf(parts[0]) > -1)) {
+        namespaces = parts.shift()
+      }
+      key = parts.join(keySeparator)
+    }
+    if (typeof namespaces === 'string') namespaces = [namespaces]
+    const lng = options.lng || this.language
+    return { key, namespaces, ns: namespaces[namespaces.length - 1], lng }
+  }
+
   exists (key, options = {}) {
-    return !!internalApi.runResolveHooks(this)(key, options)
+    return !!run(this).resolveHooks(key, options)
+  }
+
+  t (key, options = {}) {
+    throwIf.notInitializedFn(this)('t')
+
+    // if (this.options.overloadTranslationOptionHandler) {
+    //   options = { ...options, ...this.options.overloadTranslationOptionHandler(arguments) }
+    // }
+
+    // non valid keys handling
+    if (key === undefined || key === null) {
+      this.logger.warn(`Key "${key}" not valid!`)
+      return
+    }
+
+    // get namespace(s)
+    const { key: k, ns, lng } = this.extractFromKey(typeof key === 'string' ? key : key[key.length - 1], options)
+
+    if (!lng) throw new Error('There is no language defined!')
+    if (!ns) throw new Error('There is no namespace defined!')
+
+    if (!this.isLanguageLoaded(lng)) {
+      this.logger.warn(`Language "${lng}" not loaded!`)
+      return
+    }
+    if (!this.isNamespaceLoaded(ns, lng)) {
+      this.logger.warn(`Namespace "${ns}" for language "${lng}" not loaded!`)
+      return
+    }
+
+    // return key on CIMode
+    const appendNamespaceToCIMode = options.appendNamespaceToCIMode || this.options.appendNamespaceToCIMode
+    if (lng && lng.toLowerCase() === 'cimode') {
+      const nsSeparator = options.nsSeparator || this.options.nsSeparator
+      if (appendNamespaceToCIMode && nsSeparator) return ns + nsSeparator + k
+      return k
+    }
+
+    let resolved = run(this).resolveHooks(key, options)
+    if (typeof resolved !== 'object') resolved = { res: resolved, usedKey: key, exactUsedKey: key, usedLng: lng }
+
+    return run(this).translatedHooks(resolved.res, key, resolved, options)
   }
 
   getFixedT (lng, ns) {
@@ -378,30 +424,6 @@ class I18next extends EventEmitter {
     }
     fixedT.ns = ns
     return fixedT
-  }
-
-  t (key, options = {}) {
-    throwIf.notInitializedFn(this)('t')
-
-    // if (this.options.overloadTranslationOptionHandler) {
-    //   options = { ...options, ...this.options.overloadTranslationOptionHandler(arguments) }
-    // }
-
-    const lng = options.lng = options.lng || this.language
-    if (!lng) throw new Error('There is no language defined!')
-
-    const ns = options.ns = options.ns || this.options.defaultNS
-
-    if (!this.isLanguageLoaded(lng)) {
-      this.logger.warn(`Language "${lng}" not loaded!`)
-      return undefined
-    }
-    if (!this.isNamespaceLoaded(ns, lng)) {
-      this.logger.warn(`Namespace "${ns}" for language "${lng}" not loaded!`)
-      return undefined
-    }
-
-    return internalApi.runTranslateHooks(this)(key, ns, lng, options)
   }
 
   async cloneInstance (options = {}) {
