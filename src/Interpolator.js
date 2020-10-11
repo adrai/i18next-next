@@ -42,7 +42,7 @@ class Interpolator {
       const variable = match[1].trim()
       value = this.handleFormat(variable, allData, lng, options)
       if (value === undefined) {
-        this.logger.warn(`missed to pass in variable ${match[1]} for interpolating ${str}`)
+        this.logger.warn(`missed to pass in variable "${match[1]}" for interpolating "${str}"`)
         value = ''
       }
       str = str.replace(match[0], escapeValue ? escapeFn(value) : value)

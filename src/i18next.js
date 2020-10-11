@@ -206,7 +206,7 @@ class I18next extends EventEmitter {
             toLoad[lng].splice(toLoad[lng].indexOf(ns), 1)
             if (toLoad[lng].length === 0) delete toLoad[lng]
           }
-          this.logger.log(`already loading ${lng}/${ns}, so will ignore the request to load again`)
+          this.logger.log(`already loading namespace "${ns}" for language "${lng}", so will ignore the request to load again`)
         } else {
           this.loading[lng].push(ns)
         }
@@ -239,7 +239,7 @@ class I18next extends EventEmitter {
       Object.keys(read).forEach((lng) => {
         Object.keys(read[lng]).forEach((ns) => {
           this.store.addResourceBundle(lng, ns, read[lng][ns])
-          this.logger.log(`loaded namespace ${ns} for language ${lng}`, read[lng][ns])
+          this.logger.log(`loaded namespace "${ns}" for language "${lng}"`, read[lng][ns])
         })
       })
       this.emit('loaded', toLoad)
@@ -265,8 +265,8 @@ class I18next extends EventEmitter {
     try {
       return this.load(toLoad)
     } catch (err) {
-      const nsPart = ns.length === 1 ? `loading namespace ${ns[0]}` : `loading namespaces ${ns.join(',')}`
-      const lngPart = lngs.length === 1 ? `for language ${lngs[0]}` : `for languages ${lngs.join(',')}`
+      const nsPart = ns.length === 1 ? `loading namespace "${ns[0]}"` : `loading namespaces "${ns.join(',')}"`
+      const lngPart = lngs.length === 1 ? `for language "${lngs[0]}"` : `for languages "${lngs.join(',')}"`
       this.logger.warn(`${nsPart} ${lngPart}`, err)
       // throw err
     }
@@ -292,8 +292,8 @@ class I18next extends EventEmitter {
       try {
         return this.load(toLoad)
       } catch (err) {
-        const nsPart = ns.length === 1 ? `loading namespace ${ns[0]}` : `loading namespaces ${ns.join(',')}`
-        this.logger.warn(`${nsPart} for language ${lng} failed`, err)
+        const nsPart = ns.length === 1 ? `loading namespace "${ns[0]}"` : `loading namespaces "${ns.join(',')}"`
+        this.logger.warn(`${nsPart} for language "${lng}" failed`, err)
         // throw err
       }
     }
@@ -393,11 +393,11 @@ class I18next extends EventEmitter {
     const ns = options.ns = options.ns || this.options.defaultNS
 
     if (!this.isLanguageLoaded(lng)) {
-      this.logger.warn(`Language ${lng} not loaded!`)
+      this.logger.warn(`Language "${lng}" not loaded!`)
       return undefined
     }
     if (!this.isNamespaceLoaded(ns, lng)) {
-      this.logger.warn(`Namespace ${ns} for language ${lng} not loaded!`)
+      this.logger.warn(`Namespace "${ns}" for language "${lng}" not loaded!`)
       return undefined
     }
 

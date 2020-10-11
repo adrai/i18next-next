@@ -95,7 +95,7 @@ const internalApi = {
       if (instance.postProcessHooks[n]) {
         value = instance.postProcessHooks[n](value, key, opt)
       } else {
-        instance.logger.warn(`No post processor found with name ${n}`)
+        instance.logger.warn(`No post processor found with name "${n}"`)
       }
     })
     return value
@@ -247,7 +247,7 @@ const internalApi = {
 
   handleMissing: (instance) => (res, resExactUsedKey, key, ns, lng, options = {}) => {
     if (res === undefined) {
-      instance.logger.warn(`No value found for key ${resExactUsedKey} in namespace ${ns} for language ${lng}!`)
+      instance.logger.warn(`No value found for key "${resExactUsedKey}" in namespace "${ns}" for language "${lng}"!`)
 
       // string, empty or null
       let usedDefault = false
