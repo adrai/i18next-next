@@ -186,7 +186,7 @@ class I18next extends EventEmitter {
     if (this.options.initImmediate === false) this.changeLanguage(this.language)
     else await this.changeLanguage(this.language)
 
-    this.logger.log('initialized', this.options)
+    if (!this.options.isClone) this.logger.log('initialized', this.options)
     this.emit('initialized', this)
 
     if (!this.language && this.detectLanguageHooks.length === 0) {
