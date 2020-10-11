@@ -1,7 +1,7 @@
 import baseLogger from './logger.js'
 import { getDefaults } from './defaults.js'
 import { hookNames } from './hooks.js'
-import { isIE10, deepFind } from './utils.js'
+import { isIE10, deepFind, wait } from './utils.js'
 import EventEmitter from './EventEmitter.js'
 import LanguageUtils from './LanguageUtils.js'
 import Interpolator from './Interpolator.js'
@@ -196,7 +196,7 @@ class I18next extends EventEmitter {
     return this
   }
 
-  async load (toLoad) {
+  async load (toLoad, tried = 0, delay = 350) {
     throwIf.notInitializedFn(this)('load')
     Object.keys(toLoad).forEach((lng) => {
       toLoad[lng].forEach((ns) => {
@@ -215,12 +215,29 @@ class I18next extends EventEmitter {
     if (Object.keys(toLoad).length === 0) return
     for (const hook of this.readHooks) {
       const ret = hook(toLoad)
-      const read = await (ret && typeof ret.then === 'function' ? ret : Promise.resolve(ret))
+      let read
+      let shouldRetry = false
+      try {
+        read = await (ret && typeof ret.then === 'function' ? ret : Promise.resolve(ret))
+      } catch (err) {
+        if (!err.retry || tried > 5) throw err
+        shouldRetry = true
+      } finally {
+        Object.keys(toLoad).forEach((lng) => {
+          toLoad[lng].forEach((ns) => {
+            this.loading[lng] = this.loading[lng] || []
+            if (this.loading[lng].indexOf(ns) > -1) this.loading[lng].splice(this.loading[lng].indexOf(ns), 1)
+          })
+        })
+      }
+      if (shouldRetry) {
+        await wait(delay)
+        return this.load(toLoad, tried + 1, delay * 2)
+      }
+
       if (!read) continue
       Object.keys(read).forEach((lng) => {
         Object.keys(read[lng]).forEach((ns) => {
-          this.loading[lng] = this.loading[lng] || []
-          if (this.loading[lng].indexOf(ns) > -1) this.loading[lng].splice(this.loading[lng].indexOf(ns), 1)
           this.store.addResourceBundle(lng, ns, read[lng][ns])
           this.logger.log(`loaded namespace ${ns} for language ${lng}`, read[lng][ns])
         })
@@ -240,11 +257,19 @@ class I18next extends EventEmitter {
 
     this.options.preload = this.options.preload.concat(newLngs)
 
+    const ns = this.store.getSeenNamespaces()
     const toLoad = newLngs.reduce((prev, curr) => {
-      prev[curr] = this.store.getSeenNamespaces()
+      prev[curr] = ns
       return prev
     }, {})
-    return this.load(toLoad)
+    try {
+      return this.load(toLoad)
+    } catch (err) {
+      const nsPart = ns.length === 1 ? `loading namespace ${ns[0]}` : `loading namespaces ${ns.join(',')}`
+      const lngPart = lngs.length === 1 ? `for language ${lngs[0]}` : `for languages ${lngs.join(',')}`
+      this.logger.warn(`${nsPart} ${lngPart}`, err)
+      // throw err
+    }
   }
 
   async loadLanguage (lng) {
@@ -264,7 +289,13 @@ class I18next extends EventEmitter {
       lngs.forEach(l => {
         if (!toLoad[l]) toLoad[l] = ns
       })
-      return this.load(toLoad)
+      try {
+        return this.load(toLoad)
+      } catch (err) {
+        const nsPart = ns.length === 1 ? `loading namespace ${ns[0]}` : `loading namespaces ${ns.join(',')}`
+        this.logger.warn(`${nsPart} for language ${lng} failed`, err)
+        // throw err
+      }
     }
 
     // at least load fallbacks in this case

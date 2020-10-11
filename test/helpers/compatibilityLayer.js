@@ -22,7 +22,11 @@ export default function compatibilityLayer (m, opt = {}) {
             const res = toRead.map((entry) => {
               let read
               module.read(entry.lng, entry.ns, (err, ret) => {
-                if (err) throw err
+                if (err) {
+                  if (typeof err === 'string') err = new Error(err)
+                  err.retry = ret
+                  throw err
+                }
                 read = ret
               })
               return { lng: entry.lng, ns: entry.ns, resources: read }
@@ -34,7 +38,13 @@ export default function compatibilityLayer (m, opt = {}) {
             }, {})
           })
         } else {
-          const read = (lng, ns) => new Promise((resolve, reject) => module.read(lng, ns, (err, ret) => err ? reject(err) : resolve(ret)))
+          const read = (lng, ns) => new Promise((resolve, reject) => module.read(lng, ns, (err, ret) => {
+            if (err) {
+              if (typeof err === 'string') err = new Error(err)
+              err.retry = ret
+            }
+            return err ? reject(err) : resolve(ret)
+          }))
           i18n.addHook('read', async (toLoad) => {
             const toRead = []
             Object.keys(toLoad).forEach((lng) => {
