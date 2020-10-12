@@ -10,9 +10,7 @@ const i18n = i18next({
   debug: true,
   lng: 'en',
   fallbackLng: 'en',
-  preload: ['en', 'de'],
-  ns: ['translation'],
-  defaultNS: 'translation'
+  preload: ['en', 'de']
 }).use(compatibilityLayer(Backend, {
   loadPath: 'http://localhost:8080/locales/{{lng}}/{{ns}}.json'
 }))

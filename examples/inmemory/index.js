@@ -4,9 +4,7 @@ const i18n = i18next({
   initImmediate: false,
   debug: true,
   lng: 'en',
-  fallbackLng: 'en',
-  ns: ['translation'],
-  defaultNS: 'translation'
+  fallbackLng: 'en'
 }).addHook('loadResources', () => ({
   en: {
     translation: {

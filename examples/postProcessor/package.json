@@ -1,0 +1,7 @@
+{
+  "type": "module",
+  "dependencies": {
+    "i18next": "file:../../",
+    "i18next-intervalplural-postprocessor": "2.0.2"
+  }
+}

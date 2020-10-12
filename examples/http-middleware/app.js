@@ -15,8 +15,6 @@ const i18n = i18next({
   lng: 'en',
   fallbackLng: 'en',
   preload: ['en', 'de'],
-  ns: ['translation'],
-  defaultNS: 'translation',
   saveMissing: true
 }).use(compatibilityLayer(Backend, {
   loadPath: 'locales/{{lng}}/{{ns}}.json',
