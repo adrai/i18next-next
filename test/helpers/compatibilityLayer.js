@@ -21,6 +21,49 @@ export default function compatibilityLayer (m, opt = {}) {
         if (typeof clb !== 'function') return loadNamespaces(ns, clb)
         loadNamespaces(ns).then((ret) => clb(null, ret)).catch(clb)
       }
+      const loadLanguages = i18n.loadLanguages.bind(i18n)
+      i18n.loadLanguages = (lng, clb) => {
+        if (typeof clb !== 'function') return loadLanguages(lng, clb)
+        loadLanguages(lng).then((ret) => clb(null, ret)).catch(clb)
+      }
+
+      // i18n.services.languageDetector = {
+      //   cacheLanguage: run(this).cacheLanguageHooks,
+      //   detectLanguage:
+      // }
+
+      i18n.services.languageDetector = {
+        detect: (...args) => {
+          if (!i18n.detectLanguageHooks) return
+          for (const hook of i18n.detectLanguageHooks) {
+            const ret = hook.apply(this, args)
+            if (ret && typeof ret.then === 'function') {
+              const msg = `You are using an asynchronous detectLanguage hook (${i18n.detectLanguageHooks.indexOf(hook) + 1}. hook)`
+              i18n.logger.error(msg, hook.toString())
+              throw new Error(msg)
+            }
+            if (!ret) continue
+            let lngs = ret
+            if (lngs && typeof lngs !== 'string') lngs = lngs[0]
+            if (lngs) return lngs
+          }
+        },
+        cacheUserLanguage: (lng) => {
+          i18n.services.languageDetector.cacheLanguage(lng)
+        }
+      }
+
+      // modules, like i18next-http-middleware used the old sync signature
+      i18n.cloneInstance = (options = {}) => {
+        options.initImmediate = false
+        const c = i18n.clone(options)
+        const changeLanguage = c.changeLanguage.bind(c)
+        c.changeLanguage = (lng) => {
+          changeLanguage(lng)
+          c.language = lng
+        }
+        return c
+      }
 
       if (module.init && module.type !== '3rdParty') module.init(i18n.services, opt, i18n.options)
       if (module.type === 'backend') {
@@ -84,11 +127,11 @@ export default function compatibilityLayer (m, opt = {}) {
       }
       if (module.type === 'languageDetector') {
         i18n
-          .addHook('detectLanguage', () => {
+          .addHook('detectLanguage', (...args) => {
             if (module.async) {
-              return new Promise((resolve) => module.detect((lng) => resolve(lng)))
+              return new Promise((resolve) => module.detect(...args, (lng) => resolve(lng)))
             } else {
-              return module.detect()
+              return module.detect(...args)
             }
           })
           .addHook('cacheLanguage', (lng) => module.cacheUserLanguage(lng))

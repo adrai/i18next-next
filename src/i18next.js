@@ -133,6 +133,14 @@ class I18next extends EventEmitter {
       toResolveHierarchy: run(this).resolveHierarchyHooks
     }
 
+    // is set in compatability layer
+    this.services.languageDetector = this.services.languageDetector || {}
+    this.services.languageDetector = {
+      ...this.services.languageDetector,
+      cacheLanguage: run(this).cacheLanguageHooks,
+      detectLanguage: run(this).detectLanguageHooks
+    }
+
     if (this.language) this.languages = run(this).resolveHierarchyHooks(this.language)
 
     if (this.language && this.options.preload.indexOf(this.language) < 0) this.options.preload.unshift(this.language)
@@ -306,13 +314,83 @@ class I18next extends EventEmitter {
 
   dir (lng) {
     if (!lng) lng = this.language
-    return this.languageUtils.dir(lng)
+    if (!lng) return 'rtl'
+
+    const rtlLngs = [
+      'ar',
+      'shu',
+      'sqr',
+      'ssh',
+      'xaa',
+      'yhd',
+      'yud',
+      'aao',
+      'abh',
+      'abv',
+      'acm',
+      'acq',
+      'acw',
+      'acx',
+      'acy',
+      'adf',
+      'ads',
+      'aeb',
+      'aec',
+      'afb',
+      'ajp',
+      'apc',
+      'apd',
+      'arb',
+      'arq',
+      'ars',
+      'ary',
+      'arz',
+      'auz',
+      'avl',
+      'ayh',
+      'ayl',
+      'ayn',
+      'ayp',
+      'bbz',
+      'pga',
+      'he',
+      'iw',
+      'ps',
+      'pbt',
+      'pbu',
+      'pst',
+      'prp',
+      'prd',
+      'ug',
+      'ur',
+      'ydd',
+      'yds',
+      'yih',
+      'ji',
+      'yi',
+      'hbo',
+      'men',
+      'xmn',
+      'fa',
+      'jpr',
+      'peo',
+      'pes',
+      'prs',
+      'dv',
+      'sam'
+    ]
+
+    return rtlLngs.find((l) => lng.toLowerCase().indexOf(l) > -1) >= 0
+      ? 'rtl'
+      : 'ltr'
   }
 
   async changeLanguage (lng) {
     throwIf.notInitializedFn(this)('changeLanguage')
 
     if (!lng) lng = await run(this).detectLanguageHooks()
+
+    if (typeof lng !== 'string' && !Array.isArray(lng)) lng = undefined
 
     lng = typeof lng === 'string' ? lng : run(this).bestMatchFromCodesHooks(lng)
     if (!lng) return
@@ -419,7 +497,7 @@ class I18next extends EventEmitter {
     return fixedT
   }
 
-  async cloneInstance (options = {}) {
+  clone (options = {}) {
     const mergedOptions = { ...this.options, ...options, ...{ isClone: true } }
     const clone = new I18next(mergedOptions)
     const membersToCopy = ['store', 'services', 'language']
@@ -427,11 +505,16 @@ class I18next extends EventEmitter {
       clone[m] = this[m]
     })
     clone.services = { ...this.services }
+    delete clone.services.logger
     clone.services.utils = {
       isNamespaceLoaded: clone.isNamespaceLoaded.bind(clone)
     }
-    await clone.init()
-    return clone
+    if (mergedOptions.initImmediate === false) {
+      clone.init()
+      return clone
+    } else {
+      return clone.init()
+    }
   }
 }
 
