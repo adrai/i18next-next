@@ -97,6 +97,25 @@ describe('i18next', () => {
     should(translated).eql('a value for en/translation')
   })
 
+  it('inline resources without initImmediate = false, but only sync stuff', () => {
+    const i18nextInstance = i18next({ lng: 'en' })
+    i18nextInstance.addHook('read', (toLoad) => {
+      const res = {}
+      Object.keys(toLoad).forEach((lng) => {
+        toLoad[lng].forEach((ns) => {
+          res[lng] = res[lng] || {}
+          res[lng][ns] = {
+            key: `a value for ${lng}/${ns}`
+          }
+        })
+      })
+      return res
+    })
+    i18nextInstance.init()
+    const translated = i18nextInstance.t('key')
+    should(translated).eql('a value for en/translation')
+  })
+
   describe('old backend module', () => {
     class Backend {
       constructor (services, options = {}, allOptions = {}) {

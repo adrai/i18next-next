@@ -1,6 +1,6 @@
 import baseLogger from './logger.js'
 import { getDefaults } from './defaults.js'
-import { run } from './hooks.js'
+import { run, runAsyncLater } from './hooks.js'
 import { isIE10, wait, deepFind } from './utils.js'
 import EventEmitter from './EventEmitter.js'
 import ResourceStore from './ResourceStore.js'
@@ -83,30 +83,22 @@ class I18next extends EventEmitter {
   async init () {
     throwIf.alreadyInitializedFn('Already initialized!')
 
-    if (this.options.initImmediate === false) run(this).extendOptionsHooks()
-    else await run(this).extendOptionsHooks()
-    this.language = this.options.lng
-
     baseLogger.init(this._logger, this.options)
     this.logger = baseLogger
 
-    if (this.loadResourcesHooks) {
+    const { sync: syncOptions, async: asyncOptions } = runAsyncLater(this.extendOptionsHooks, [{ ...this.options }])
+    syncOptions.forEach((opt) => {
+      this.options = { ...opt, ...this.options }
+    })
+    if (asyncOptions.length > 0) {
       if (this.options.initImmediate === false) {
-        const allResources = this.loadResourcesHooks.map((hook) => hook(this.options))
-        const foundIndex = allResources.findIndex((r) => r && typeof r.then === 'function')
-        if (foundIndex > -1) {
-          const msg = `You set initImmediate to false but are using an asynchronous loadResources hook (${foundIndex + 1}. hook)`
-          this.logger.error(msg, this.loadResourcesHooks[foundIndex].toString())
-          throw new Error(msg)
-        }
-        const resources = allResources.reduce((prev, curr) => ({ ...prev, ...curr }), {})
-        this.store.setData(resources)
-        this.logger.log('set data', resources)
-      } else {
-        const resources = await run(this).loadResourcesHooks()
-        this.store.setData(resources)
-        this.logger.log('set data', resources)
+        const msg = 'You set initImmediate to false but are using an asynchronous extendOptions hook'
+        this.logger.error(msg)
+        throw new Error(msg)
       }
+      (await Promise.all(asyncOptions)).forEach((opt) => {
+        this.options = { ...opt, ...this.options }
+      })
     }
 
     this.use(defaultStack)
@@ -117,48 +109,65 @@ class I18next extends EventEmitter {
       })
     }
 
+    this.language = this.options.lng
+    if (!this.language && this.options.fallbackLng) this.languages = [this.options.fallbackLng]
+
+    const { sync: syncRes, async: asyncRes } = runAsyncLater(this.loadResourcesHooks, [this.options])
+    let resources = syncRes.reduce((prev, curr) => ({ ...prev, ...curr }), {})
+    if (asyncRes.length > 0) {
+      if (this.options.initImmediate === false) {
+        const msg = 'You set initImmediate to false but are using an asynchronous loadResources hook'
+        this.logger.error(msg)
+        throw new Error(msg)
+      }
+      resources = (await Promise.all(asyncRes)).reduce((prev, curr) => ({ ...prev, ...curr }), resources)
+    }
+    if (Object.keys(resources).length > 0) {
+      this.store.setData(resources)
+      this.logger.log('set data', resources)
+    }
+
     if (this.language) this.languages = this.toResolveHierarchy(this.language)
 
     if (this.language && this.options.preload.indexOf(this.language) < 0) this.options.preload.unshift(this.language)
 
     this.isInitialized = true
-    if (this.options.preload.length > 0) {
+    if (this.options.preload.length > 0 && this.readHooks) {
       const toLoad = this.options.preload.reduce((prev, curr) => {
         prev[curr] = this.store.getSeenNamespaces()
         return prev
       }, {})
 
-      if (this.options.initImmediate === false) {
-        for (const hook of (this.readHooks || [])) {
-          const read = hook(toLoad)
-          if (read && typeof read.then === 'function') {
+      for (const hook of this.readHooks) {
+        let read = hook(toLoad)
+        if (read && typeof read.then === 'function') {
+          if (this.options.initImmediate === false) {
             const msg = `You set initImmediate to false but are using an asynchronous read hook (${this.readHooks.indexOf(hook) + 1}. hook)`
             this.logger.error(msg, hook.toString())
             throw new Error(msg)
+          } else {
+            read = await read
           }
-          if (!read) continue
-          Object.keys(read).forEach((lng) => {
-            Object.keys(read[lng]).forEach((ns) => {
-              this.store.addResourceBundle(lng, ns, read[lng][ns])
-              this.logger.log(`loaded namespace ${ns} for language ${lng}`, read[lng][ns])
-            })
-          })
-          this.emit('loaded', toLoad)
         }
-      } else {
-        await this.load(toLoad)
+        if (!read) continue
+        Object.keys(read).forEach((lng) => {
+          Object.keys(read[lng]).forEach((ns) => {
+            this.store.addResourceBundle(lng, ns, read[lng][ns])
+            this.logger.log(`loaded namespace ${ns} for language ${lng}`, read[lng][ns])
+          })
+        })
+        this.emit('loaded', toLoad)
       }
     }
 
-    if (this.options.initImmediate === false) this.changeLanguage(this.language)
+    const hasLanguageDetection = this.detectLanguageHooks && this.detectLanguageHooks.length > 0
+    if (!this.language && !hasLanguageDetection) this.logger.warn('init: no lng is defined and no languageDetector is used')
+    const hasLanguageCaching = this.cacheLanguageHooks && this.cacheLanguageHooks.length > 0
+    if (this.options.initImmediate === false || (!hasLanguageDetection && !hasLanguageCaching)) this.changeLanguage(this.language)
     else await this.changeLanguage(this.language)
 
     if (!this.options.isClone) this.logger.log('initialized', this.options)
     this.emit('initialized', this)
-
-    if (!this.language && (!this.detectLanguageHooks || this.detectLanguageHooks.length === 0)) {
-      this.logger.warn('init: no lng is defined and no languageDetector is used')
-    }
 
     return this
   }
@@ -428,7 +437,7 @@ class I18next extends EventEmitter {
   }
 
   t (key, options = {}) {
-    throwIf.notInitializedFn(this)('t')
+    // throwIf.notInitializedFn(this)('t')
 
     // if (this.options.overloadTranslationOptionHandler) {
     //   options = { ...options, ...this.options.overloadTranslationOptionHandler(arguments) }

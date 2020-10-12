@@ -3,7 +3,6 @@ import ICU from 'i18next-icu'
 import compatibilityLayer from '../../test/helpers/compatibilityLayer.js'
 
 const i18n = i18next({
-  initImmediate: false,
   debug: true,
   lng: 'en',
   fallbackLng: 'en'

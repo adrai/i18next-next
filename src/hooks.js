@@ -5,22 +5,22 @@ export async function runHooks (hooks, args) {
   }))
 }
 
+export function runAsyncLater (hooks = [], args) {
+  const immediateResults = []
+  const asyncHandles = []
+  hooks.forEach((handle) => {
+    const ret = handle(...args)
+    if (ret && typeof ret.then === 'function') {
+      asyncHandles.push(ret)
+    } else {
+      immediateResults.push(ret)
+    }
+  })
+  return { sync: immediateResults, async: asyncHandles }
+}
+
 export function run (instance) {
   return {
-    async extendOptionsHooks () {
-      if (!instance.extendOptionsHooks) return instance.options
-      const allOptions = await runHooks(instance.extendOptionsHooks, [{ ...instance.options }])
-      allOptions.forEach((opt) => {
-        instance.options = { ...opt, ...instance.options }
-      })
-    },
-
-    async loadResourcesHooks () {
-      if (!instance.loadResourcesHooks) return
-      const allResources = await runHooks(instance.loadResourcesHooks, [instance.options])
-      return allResources.reduce((prev, curr) => ({ ...prev, ...curr }), {})
-    },
-
     async detectLanguageHooks (...args) {
       if (!instance.detectLanguageHooks) return
       for (const hook of instance.detectLanguageHooks) {

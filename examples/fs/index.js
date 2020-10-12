@@ -3,7 +3,7 @@ import Backend from 'i18next-fs-backend'
 import compatibilityLayer from '../../test/helpers/compatibilityLayer.js'
 
 const i18n = i18next({
-  // initImmediate: false,
+  // initImmediate: false, // initImmediate = false will make sure you can use t function imediately after init call (without waiting for its completion)
   debug: true,
   lng: 'en',
   fallbackLng: 'en',

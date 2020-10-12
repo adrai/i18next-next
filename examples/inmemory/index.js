@@ -1,7 +1,6 @@
 import i18next from 'i18next'
 
 const i18n = i18next({
-  initImmediate: false,
   debug: true,
   lng: 'en',
   fallbackLng: 'en'

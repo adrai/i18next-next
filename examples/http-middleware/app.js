@@ -10,7 +10,7 @@ const app = express()
 const port = process.env.PORT || 8080
 
 const i18n = i18next({
-  // initImmediate: false,
+  // initImmediate: false, // initImmediate = false will make sure you can use t function imediately after init call (without waiting for its completion)
   debug: true,
   lng: 'en',
   fallbackLng: 'en',
@@ -27,7 +27,6 @@ i18n.init()
 app.use(i18nextMiddleware.handle(i18n))
 
 app.get('/', (req, res) => {
-  console.log(req.language)
   res.send(req.t('welcome'))
 })
 
