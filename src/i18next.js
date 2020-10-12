@@ -20,14 +20,6 @@ class I18next extends EventEmitter {
     if (this.language) this.languages = [this.language]
     if (!this.language && this.options.fallbackLng) this.languages = [this.options.fallbackLng]
     this.store = new ResourceStore({}, this.options)
-    this.services = {
-      resourceStore: this.store,
-      languageUtils: {},
-      interpolator: {},
-      utils: {
-        isNamespaceLoaded: this.isNamespaceLoaded.bind(this)
-      }
-    }
 
     // append api
     const storeApi = [
@@ -60,7 +52,7 @@ class I18next extends EventEmitter {
   use (module) {
     if (!module) throw new Error('You are passing an undefined module! Please check the object you are passing to i18next.use()')
     if (!module.register && module.log && module.warn && module.error) {
-      this.services.logger = this.logger
+      this._logger = module
       return this
     }
     if (module.type) throw new Error('You are probably passing an old module! Please check the object you are passing to i18next.use()')
@@ -95,9 +87,8 @@ class I18next extends EventEmitter {
     else await run(this).extendOptionsHooks()
     this.language = this.options.lng
 
-    baseLogger.init(this.services.logger, this.options)
+    baseLogger.init(this._logger, this.options)
     this.logger = baseLogger
-    this.services.logger = this.logger
 
     if (this.loadResourcesHooks) {
       if (this.options.initImmediate === false) {
@@ -126,22 +117,7 @@ class I18next extends EventEmitter {
       })
     }
 
-    this.services.languageUtils = {
-      // ...this.services.languageUtils,
-      getBestMatchFromCodes: run(this).bestMatchFromCodesHooks,
-      getFallbackCodes: run(this).fallbackCodesHooks,
-      toResolveHierarchy: run(this).resolveHierarchyHooks
-    }
-
-    // is set in compatability layer
-    this.services.languageDetector = this.services.languageDetector || {}
-    this.services.languageDetector = {
-      ...this.services.languageDetector,
-      cacheLanguage: run(this).cacheLanguageHooks,
-      detectLanguage: run(this).detectLanguageHooks
-    }
-
-    if (this.language) this.languages = run(this).resolveHierarchyHooks(this.language)
+    if (this.language) this.languages = this.toResolveHierarchy(this.language)
 
     if (this.language && this.options.preload.indexOf(this.language) < 0) this.options.preload.unshift(this.language)
 
@@ -279,7 +255,7 @@ class I18next extends EventEmitter {
       const toLoad = {
         [lng]: ns
       }
-      const lngs = run(this).resolveHierarchyHooks(lng)
+      const lngs = this.toResolveHierarchy(lng)
       lngs.forEach(l => {
         if (!toLoad[l]) toLoad[l] = ns
       })
@@ -293,7 +269,7 @@ class I18next extends EventEmitter {
     }
 
     // at least load fallbacks in this case
-    const fallbacks = run(this).fallbackCodesHooks(this.options.fallbackLng)
+    const fallbacks = this.getFallbackCodes(this.options.fallbackLng)
     return fallbacks.reduce((prev, curr) => {
       prev[curr] = ns
       return prev
@@ -385,14 +361,34 @@ class I18next extends EventEmitter {
       : 'ltr'
   }
 
+  getBestMatchFromCodes (lngs) {
+    return run(this).bestMatchFromCodesHooks(lngs)
+  }
+
+  getFallbackCodes (fallbackLng, lng) {
+    return run(this).fallbackCodesHooks(fallbackLng, lng)
+  }
+
+  toResolveHierarchy (lng, fallbackLng) {
+    return run(this).resolveHierarchyHooks(lng, fallbackLng)
+  }
+
+  async cacheLanguage (lng) {
+    return run(this).cacheLanguageHooks(lng)
+  }
+
+  async detectLanguage (...args) {
+    return run(this).detectLanguageHooks.apply(this, args)
+  }
+
   async changeLanguage (lng) {
     throwIf.notInitializedFn(this)('changeLanguage')
 
-    if (!lng) lng = await run(this).detectLanguageHooks()
+    if (!lng) lng = await this.detectLanguage()
 
     if (typeof lng !== 'string' && !Array.isArray(lng)) lng = undefined
 
-    lng = typeof lng === 'string' ? lng : run(this).bestMatchFromCodesHooks(lng)
+    lng = typeof lng === 'string' ? lng : this.getBestMatchFromCodes(lng)
     if (!lng) return
     if (lng === this.language) return
 
@@ -400,8 +396,8 @@ class I18next extends EventEmitter {
 
     await this.loadLanguage(lng)
     this.language = lng
-    this.languages = run(this).resolveHierarchyHooks(this.language)
-    await run(this).cacheLanguageHooks(this.language)
+    this.languages = this.toResolveHierarchy(this.language)
+    await this.cacheLanguage(this.language)
 
     this.emit('languageChanged', lng)
     this.logger.log('languageChanged', lng)
@@ -500,15 +496,10 @@ class I18next extends EventEmitter {
   clone (options = {}) {
     const mergedOptions = { ...this.options, ...options, ...{ isClone: true } }
     const clone = new I18next(mergedOptions)
-    const membersToCopy = ['store', 'services', 'language']
+    const membersToCopy = ['store', 'language', 'languages']
     membersToCopy.forEach((m) => {
       clone[m] = this[m]
     })
-    clone.services = { ...this.services }
-    delete clone.services.logger
-    clone.services.utils = {
-      isNamespaceLoaded: clone.isNamespaceLoaded.bind(clone)
-    }
     if (mergedOptions.initImmediate === false) {
       clone.init()
       return clone

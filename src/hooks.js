@@ -21,10 +21,10 @@ export function run (instance) {
       return allResources.reduce((prev, curr) => ({ ...prev, ...curr }), {})
     },
 
-    async detectLanguageHooks () {
+    async detectLanguageHooks (...args) {
       if (!instance.detectLanguageHooks) return
       for (const hook of instance.detectLanguageHooks) {
-        const ret = hook()
+        const ret = hook.apply(this, args)
         let lngs = await (ret && typeof ret.then === 'function' ? ret : Promise.resolve(ret))
         if (lngs && typeof lngs === 'string') lngs = [lngs]
         if (lngs) return lngs
@@ -45,11 +45,12 @@ export function run (instance) {
     },
 
     bestMatchFromCodesHooks (lngs) {
-      if (!instance.bestMatchFromCodesHooks) return
+      if (!instance.bestMatchFromCodesHooks) return lngs[0]
       for (const hook of instance.bestMatchFromCodesHooks) {
         const lng = hook(lngs)
         if (lng !== undefined) return lng
       }
+      return lngs[0]
     },
 
     fallbackCodesHooks (fallbackLng, lng) {

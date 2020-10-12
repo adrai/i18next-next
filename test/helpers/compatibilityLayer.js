@@ -10,10 +10,37 @@ export default function compatibilityLayer (m, opt = {}) {
   const module = createClassOnDemand(m)
   return { // opt are module specific options... not anymore passed as module options on global i18next options
     register: (i18n) => {
-      // interpolator is mainly used for path interpolation, this interpolation function should be placed in the modules, in future...
-      i18n.services.interpolator = new Interpolator(i18n.options.interpolation)
-
-      i18n.services.utils.hasLoadedNamespace = i18n.services.utils.isNamespaceLoaded
+      i18n.services = {
+        // interpolator is mainly used for path interpolation, this interpolation function should be placed in the modules, in future...
+        interpolator: new Interpolator(i18n.options.interpolation),
+        utils: {
+          hasLoadedNamespace: i18n.isNamespaceLoaded.bind(i18n)
+        },
+        resourceStore: i18n.store,
+        languageUtils: {
+          getBestMatchFromCodes: i18n.getBestMatchFromCodes.bind(i18n),
+          getFallbackCodes: i18n.getFallbackCodes.bind(i18n),
+          toResolveHierarchy: i18n.toResolveHierarchy.bind(i18n)
+        },
+        languageDetector: {
+          detect: (...args) => {
+            if (!i18n.detectLanguageHooks) return
+            for (const hook of i18n.detectLanguageHooks) {
+              const ret = hook.apply(this, args)
+              if (ret && typeof ret.then === 'function') {
+                const msg = `You are using an asynchronous detectLanguage hook (${i18n.detectLanguageHooks.indexOf(hook) + 1}. hook)`
+                i18n.logger.error(msg, hook.toString())
+                throw new Error(msg)
+              }
+              if (!ret) continue
+              let lngs = ret
+              if (lngs && typeof lngs !== 'string') lngs = lngs[0]
+              if (lngs) return lngs
+            }
+          },
+          cacheUserLanguage: (lng) => i18n.cacheLanguage(lng)
+        }
+      }
 
       // modules, like react-i18next used the old callback signature
       const loadNamespaces = i18n.loadNamespaces.bind(i18n)
@@ -27,36 +54,11 @@ export default function compatibilityLayer (m, opt = {}) {
         loadLanguages(lng).then((ret) => clb(null, ret)).catch(clb)
       }
 
-      // i18n.services.languageDetector = {
-      //   cacheLanguage: run(this).cacheLanguageHooks,
-      //   detectLanguage:
-      // }
-
-      i18n.services.languageDetector = {
-        detect: (...args) => {
-          if (!i18n.detectLanguageHooks) return
-          for (const hook of i18n.detectLanguageHooks) {
-            const ret = hook.apply(this, args)
-            if (ret && typeof ret.then === 'function') {
-              const msg = `You are using an asynchronous detectLanguage hook (${i18n.detectLanguageHooks.indexOf(hook) + 1}. hook)`
-              i18n.logger.error(msg, hook.toString())
-              throw new Error(msg)
-            }
-            if (!ret) continue
-            let lngs = ret
-            if (lngs && typeof lngs !== 'string') lngs = lngs[0]
-            if (lngs) return lngs
-          }
-        },
-        cacheUserLanguage: (lng) => {
-          i18n.services.languageDetector.cacheLanguage(lng)
-        }
-      }
-
       // modules, like i18next-http-middleware used the old sync signature
       i18n.cloneInstance = (options = {}) => {
         options.initImmediate = false
         const c = i18n.clone(options)
+        c.services = { ...i18n.services }
         const changeLanguage = c.changeLanguage.bind(c)
         c.changeLanguage = (lng) => {
           changeLanguage(lng)
