@@ -53,11 +53,12 @@ export function run (instance) {
     },
 
     fallbackCodesHooks (fallbackLng, lng) {
-      if (!instance.fallbackCodesHooks) return
+      if (!instance.fallbackCodesHooks) return [fallbackLng]
       for (const hook of instance.fallbackCodesHooks) {
         const fallbacks = hook(fallbackLng, lng)
         if (fallbacks !== undefined) return fallbacks
       }
+      return [fallbackLng]
     },
 
     resolveHierarchyHooks (lng, fallbackLng) {

@@ -17,6 +17,8 @@ class I18next extends EventEmitter {
     this.options = { ...defOpt, ...options }
     if (options.interpolation) this.options = { ...this.options, interpolation: { ...defOpt.interpolation, ...options.interpolation } }
     this.language = this.options.lng
+    if (this.language) this.languages = [this.language]
+    if (!this.language && this.options.fallbackLng) this.languages = [this.options.fallbackLng]
     this.store = new ResourceStore({}, this.options)
     this.services = {
       resourceStore: this.store,
@@ -131,11 +133,6 @@ class I18next extends EventEmitter {
       toResolveHierarchy: run(this).resolveHierarchyHooks
     }
 
-    this.services.interpolator = {
-      // ...this.services.interpolator,
-      interpolate: run(this).interpolateHooks
-    }
-
     if (this.language) this.languages = run(this).resolveHierarchyHooks(this.language)
 
     if (this.language && this.options.preload.indexOf(this.language) < 0) this.options.preload.unshift(this.language)
@@ -148,7 +145,7 @@ class I18next extends EventEmitter {
       }, {})
 
       if (this.options.initImmediate === false) {
-        for (const hook of this.readHooks) {
+        for (const hook of (this.readHooks || [])) {
           const read = hook(toLoad)
           if (read && typeof read.then === 'function') {
             const msg = `You set initImmediate to false but are using an asynchronous read hook (${this.readHooks.indexOf(hook) + 1}. hook)`
@@ -183,7 +180,7 @@ class I18next extends EventEmitter {
   }
 
   async load (toLoad, tried = 0, delay = 350) {
-    throwIf.notInitializedFn(this)('load')
+    // throwIf.notInitializedFn(this)('load')
     if (!this.readHooks) return
 
     Object.keys(toLoad).forEach((lng) => {
@@ -236,10 +233,10 @@ class I18next extends EventEmitter {
   }
 
   async loadLanguages (lngs) {
-    throwIf.notInitializedFn(this)('loadLanguages')
+    // throwIf.notInitializedFn(this)('loadLanguages')
 
     if (typeof lngs === 'string') lngs = [lngs]
-    const newLngs = lngs.filter((lng) => this.options.preload.indexOf(lng) < 0)
+    const newLngs = lngs.filter((lng) => typeof lng === 'string' && this.options.preload.indexOf(lng) < 0)
     // Exit early if all given languages are already preloaded
     if (!newLngs.length) return
 
@@ -265,9 +262,10 @@ class I18next extends EventEmitter {
   }
 
   async loadNamespaces (ns, lng) {
-    throwIf.notInitializedFn(this)('loadNamespace')
+    // throwIf.notInitializedFn(this)('loadNamespaces')
     if (typeof ns === 'string') ns = [ns]
 
+    if (lng && typeof lng !== 'string') lng = this.language
     if (!lng) lng = this.language
     if (lng) {
       const toLoad = {
@@ -288,7 +286,6 @@ class I18next extends EventEmitter {
 
     // at least load fallbacks in this case
     const fallbacks = run(this).fallbackCodesHooks(this.options.fallbackLng)
-    if (fallbacks.length === 0) throw new Error('There is no language defined!')
     return fallbacks.reduce((prev, curr) => {
       prev[curr] = ns
       return prev
@@ -300,14 +297,10 @@ class I18next extends EventEmitter {
   }
 
   isLanguageLoaded (lng) {
-    throwIf.notInitializedFn(this)('isLanguageLoaded')
-
     return this.store.hasResourceBundle(lng)
   }
 
   isNamespaceLoaded (ns, lng) {
-    throwIf.notInitializedFn(this)('isNamespaceLoaded')
-
     return this.store.hasResourceBundle(lng, ns)
   }
 
@@ -376,17 +369,17 @@ class I18next extends EventEmitter {
     // get namespace(s)
     const { key: k, ns, lng } = this.extractFromKey(typeof key === 'string' ? key : key[key.length - 1], options)
 
-    if (!lng) throw new Error('There is no language defined!')
-    if (!ns) throw new Error('There is no namespace defined!')
+    // if (!lng) throw new Error('There is no language defined!')
+    // if (!ns) throw new Error('There is no namespace defined!')
 
-    if (!this.isLanguageLoaded(lng)) {
-      this.logger.warn(`Language "${lng}" not loaded!`)
-      return
-    }
-    if (!this.isNamespaceLoaded(ns, lng)) {
-      this.logger.warn(`Namespace "${ns}" for language "${lng}" not loaded!`)
-      return
-    }
+    // if (!this.isLanguageLoaded(lng)) {
+    //   this.logger.warn(`Language "${lng}" not loaded!`)
+    //   return
+    // }
+    // if (!this.isNamespaceLoaded(ns, lng)) {
+    //   this.logger.warn(`Namespace "${ns}" for language "${lng}" not loaded!`)
+    //   return
+    // }
 
     // return key on CIMode
     const appendNamespaceToCIMode = options.appendNamespaceToCIMode || this.options.appendNamespaceToCIMode

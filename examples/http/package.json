@@ -1,0 +1,10 @@
+{
+  "type": "module",
+  "dependencies": {
+    "i18next": "file:../../",
+    "i18next-http-backend": "1.0.21"
+  },
+  "devDependencies": {
+    "express": "4.17.1"
+  }
+}

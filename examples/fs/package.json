@@ -1,0 +1,7 @@
+{
+  "type": "module",
+  "dependencies": {
+    "i18next": "file:../../",
+    "i18next-fs-backend": "1.0.7"
+  }
+}

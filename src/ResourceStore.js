@@ -37,7 +37,7 @@ class ResourceStore extends EventEmitter {
   getResource (lng, ns, key, options = {}) {
     if (!key) {
       if (!ns) return this.data[lng]
-      return this.data[lng][ns]
+      return this.data[lng] && this.data[lng][ns]
     }
     const keySeparator = options.keySeparator !== undefined ? options.keySeparator : this.options.keySeparator
     return getValueOfKey(this.data, lng, ns, key, keySeparator)

@@ -1,3 +1,5 @@
+import Interpolator from '../../src/Interpolator.js'
+
 function createClassOnDemand (ClassOrObject) {
   if (!ClassOrObject) return null
   if (typeof ClassOrObject === 'function') return new ClassOrObject()
@@ -8,7 +10,18 @@ export default function compatibilityLayer (m, opt = {}) {
   const module = createClassOnDemand(m)
   return { // opt are module specific options... not anymore passed as module options on global i18next options
     register: (i18n) => {
+      // interpolator is mainly used for path interpolation, this interpolation function should be placed in the modules, in future...
+      i18n.services.interpolator = new Interpolator(i18n.options.interpolation)
+
       i18n.services.utils.hasLoadedNamespace = i18n.services.utils.isNamespaceLoaded
+
+      // modules, like react-i18next used the old callback signature
+      const loadNamespaces = i18n.loadNamespaces.bind(i18n)
+      i18n.loadNamespaces = (ns, clb) => {
+        if (typeof clb !== 'function') return loadNamespaces(ns, clb)
+        loadNamespaces(ns).then((ret) => clb(null, ret)).catch(clb)
+      }
+
       if (module.init && module.type !== '3rdParty') module.init(i18n.services, opt, i18n.options)
       if (module.type === 'backend') {
         if (i18n.options.initImmediate === false) {
@@ -92,7 +105,29 @@ export default function compatibilityLayer (m, opt = {}) {
         if (module.getResource) i18n.addHook('resolveKey', (key, ns, lng, res, options) => module.getResource(lng, ns, key, options))
       }
       if (module.type === '3rdParty') {
-        i18n.on('initialized', () => module.init(i18n))
+        module.init(i18n)
+      }
+
+      if (!i18n.services.backendConnector && i18n.readHooks && i18n.readHooks.length > 0) {
+        i18n.services.backendConnector = {
+          backend: true,
+          get state () {
+            const s = {}
+            const data = i18n.store.getData()
+            Object.keys(data).forEach((lng) => {
+              Object.keys(data[lng]).forEach((ns) => {
+                s[`${lng}|${ns}`] = 2
+              })
+            })
+            const loading = this.loading || {}
+            Object.keys(loading).forEach((lng) => {
+              loading[lng].forEach((ns) => {
+                s[`${lng}|${ns}`] = 1
+              })
+            })
+            return s
+          }
+        }
       }
     }
   }

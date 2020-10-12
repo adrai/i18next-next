@@ -1,0 +1,6 @@
+{
+  "type": "module",
+  "dependencies": {
+    "i18next": "file:../../"
+  }
+}
