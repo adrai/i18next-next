@@ -1,9 +1,25 @@
-import Interpolator from '../../src/Interpolator.js'
-
 function createClassOnDemand (ClassOrObject) {
   if (!ClassOrObject) return null
   if (typeof ClassOrObject === 'function') return new ClassOrObject()
   return ClassOrObject
+}
+
+function interpolate (str, data) {
+  const regexpStr = '{{(.+?)}}'
+  const regexp = new RegExp(regexpStr, 'g')
+
+  let match = regexp.exec(str)
+  let value
+  while (match) {
+    const variable = match[1].trim()
+    value = data[variable]
+    if (value === undefined) value = ''
+    str = str.replace(match[0], value)
+
+    regexp.lastIndex = 0
+    match = regexp.exec(str)
+  }
+  return str
 }
 
 export default function compatibilityLayer (m, opt = {}) {
@@ -12,7 +28,7 @@ export default function compatibilityLayer (m, opt = {}) {
     register: (i18n) => {
       i18n.services = {
         // interpolator is mainly used for path interpolation, this interpolation function should be placed in the modules, in future...
-        interpolator: new Interpolator(i18n.options.interpolation),
+        interpolator: { interpolate },
         utils: {
           hasLoadedNamespace: i18n.isNamespaceLoaded.bind(i18n)
         },

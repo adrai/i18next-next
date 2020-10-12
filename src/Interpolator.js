@@ -8,10 +8,6 @@ class Interpolator {
     this.format = (this.options.format) || (value => value)
     this.formatSeparator = this.options.formatSeparator ? this.options.formatSeparator : this.options.formatSeparator || ','
 
-    this.resetRegExp()
-  }
-
-  resetRegExp () {
     const regexpStr = `${this.options.prefix}(.+?)${this.options.suffix}`
     this.regexp = new RegExp(regexpStr, 'g')
   }
@@ -35,7 +31,7 @@ class Interpolator {
 
     const defaultData = (this.options && this.options && this.options.defaultVariables) || {}
     const allData = { ...defaultData, ...data }
-    this.resetRegExp()
+    this.regexp.lastIndex = 0
     let match = this.regexp.exec(str)
     let value
     while (match) {
@@ -47,7 +43,7 @@ class Interpolator {
       }
       str = str.replace(match[0], escapeValue ? escapeFn(value) : value)
 
-      this.resetRegExp()
+      this.regexp.lastIndex = 0
       match = this.regexp.exec(str)
     }
     return str
