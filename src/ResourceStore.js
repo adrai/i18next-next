@@ -35,16 +35,29 @@ class ResourceStore extends EventEmitter {
   }
 
   getResource (lng, ns, key, options = {}) {
+    const keySeparator = options.keySeparator !== undefined ? options.keySeparator : this.options.keySeparator
+    if (lng.indexOf(keySeparator) > -1) {
+      const splitted = lng.split(keySeparator)
+      lng = splitted.shift()
+      ns = splitted.shift()
+      key = splitted.join(keySeparator)
+    }
     if (!key) {
       if (!ns) return this.data[lng]
       return this.data[lng] && this.data[lng][ns]
     }
-    const keySeparator = options.keySeparator !== undefined ? options.keySeparator : this.options.keySeparator
     return getValueOfKey(this.data, lng, ns, key, keySeparator)
   }
 
   addResource (lng, ns, key, value, options = { silent: false }) {
-    // const keySeparator = options.keySeparator !== undefined ? options.keySeparator : this.options.keySeparator
+    const keySeparator = options.keySeparator !== undefined ? options.keySeparator : this.options.keySeparator
+    if (lng.indexOf(keySeparator) > -1) {
+      const splitted = lng.split(keySeparator)
+      lng = splitted.shift()
+      value = ns
+      ns = splitted.shift()
+      key = splitted.join(keySeparator)
+    }
     if (this.seenNamespaces.indexOf(ns) < 0) this.seenNamespaces.push(ns)
     setValueForKey(this.data, lng, ns, key, value)
     if (!options.silent) this.emit('added', lng, ns, key, value)
@@ -58,7 +71,15 @@ class ResourceStore extends EventEmitter {
   }
 
   addResourceBundle (lng, ns, resources, deep, overwrite, options = { silent: false }) {
-    let pack = this.data && this.data[lng] && this.data[lng][ns]
+    const keySeparator = options.keySeparator !== undefined ? options.keySeparator : this.options.keySeparator
+    if (lng.indexOf(keySeparator) > -1) {
+      const splitted = lng.split(keySeparator)
+      lng = splitted.shift()
+      resources = ns
+      ns = splitted.shift()
+    }
+
+    let pack = (this.data && this.data[lng] && this.data[lng][ns]) || {}
 
     if (deep) {
       deepExtend(pack, resources, overwrite)

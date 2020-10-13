@@ -10,6 +10,18 @@ export function deepFind (obj, path, keySeparator = '.') {
   let current = obj
   for (let i = 0; i < paths.length; ++i) {
     if (current[paths[i]] === undefined) {
+      let j = 2
+      let mix = current
+      let p = paths.slice(i, i + j).join(keySeparator)
+      while (paths.length > (i + j) && (p = paths.slice(i, i + j).join(keySeparator)) && (mix = mix[p]) && !mix) {
+        j++
+      }
+      if (mix) {
+        if (typeof mix === 'string') return mix
+        if (p && typeof mix[p] === 'string') return mix[p]
+        const joinedPath = paths.slice(i + j).join(keySeparator)
+        if (joinedPath) return deepFind(mix, joinedPath, keySeparator)
+      }
       return undefined
     } else {
       current = current[paths[i]]
