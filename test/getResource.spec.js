@@ -22,7 +22,7 @@ describe('Translator', () => {
       { args: ['de', 'translation', 'test'], expected: undefined }
     ]
 
-    tests.forEach(test => {
+    tests.forEach((test) => {
       it('correctly gets resource for ' + JSON.stringify(test.args) + ' args', () => {
         should(i18n.getResource.apply(i18n, test.args)).eql(test.expected)
       })

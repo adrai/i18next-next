@@ -9,6 +9,9 @@ export function deepFind (obj, path, keySeparator = '.') {
   const paths = path.split(keySeparator)
   let current = obj
   for (let i = 0; i < paths.length; ++i) {
+    if (typeof current[paths[i]] === 'string' && i + 1 < paths.length) {
+      return undefined
+    }
     if (current[paths[i]] === undefined) {
       let j = 2
       let mix = current

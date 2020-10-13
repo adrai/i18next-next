@@ -34,7 +34,7 @@ describe('Translator', () => {
       { args: ['translation:notInDE', { fallbackLng: 'fr' }], expected: 'test_notInDE_fr' }
     ]
 
-    tests.forEach(test => {
+    tests.forEach((test) => {
       it(`correctly translates for ${JSON.stringify(test.args)} args`, () => {
         should(i18n.t(...test.args)).eql(test.expected)
       })

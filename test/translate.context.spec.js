@@ -54,7 +54,7 @@ describe('Translator', () => {
       }
     ]
 
-    tests.forEach(test => {
+    tests.forEach((test) => {
       it('correctly translates for ' + JSON.stringify(test.args) + ' args', () => {
         should(i18n.t.apply(i18n, test.args)).eql(test.expected)
       })

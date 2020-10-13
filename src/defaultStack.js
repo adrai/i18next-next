@@ -240,7 +240,7 @@ const getI18nextFormat = (i18n) => {
               if (updateMissing) {
                 await runSpecific.handleUpdateKeyHooks(k, ns, l, res, options)
               } else {
-                await runSpecific.handleMissingKeyHooks(k, ns, l, options.defaultValue, options)
+                await runSpecific.handleMissingKeyHooks(k, ns, l, options.defaultValue || res, options)
               }
               i18n.emit('missingKey', l, ns, k, res)
             }

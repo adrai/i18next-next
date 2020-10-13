@@ -37,7 +37,7 @@ describe('Translator', () => {
       { args: ['deep.test', { lng: 'en-US', nsSeparator: '.' }], expected: true }
     ]
 
-    tests.forEach(test => {
+    tests.forEach((test) => {
       it('correctly translates for ' + JSON.stringify(test.args) + ' args', () => {
         should(i18n.exists.apply(i18n, test.args)).eql(test.expected)
       })

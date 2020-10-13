@@ -55,7 +55,8 @@ describe('utils', () => {
               key: 'very deep'
             }
           }
-        }
+        },
+        str: 'whatever'
       }
 
       const n = deepFind(obj, 'a.nested')
@@ -72,6 +73,10 @@ describe('utils', () => {
       should(df2).eql('deep flat')
       const v = deepFind(obj, 'b.flat.more2.deeper.key')
       should(v).eql('very deep')
+      const fls = deepFind(obj, 'a.wrong')
+      should(fls).eql(undefined)
+      const fls2 = deepFind(obj, 'str.wrong')
+      should(fls2).eql(undefined)
     })
   })
 })

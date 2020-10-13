@@ -23,7 +23,7 @@ describe('Interpolator', () => {
       { args: ['test {{test.deep}}', { test: { deep: '123' } }], expected: 'test 123' }
     ]
 
-    tests.forEach(test => {
+    tests.forEach((test) => {
       it('correctly interpolates for ' + JSON.stringify(test.args) + ' args', () => {
         should(ip.interpolate.apply(ip, test.args)).eql(test.expected)
       })
@@ -55,7 +55,7 @@ describe('Interpolator', () => {
       { args: ['test {{ test }}', { test: undefined }], expected: 'test 123' }
     ]
 
-    tests.forEach(test => {
+    tests.forEach((test) => {
       it('correctly interpolates for ' + JSON.stringify(test.args) + ' args', () => {
         should(ip.interpolate.apply(ip, test.args)).eql(test.expected)
       })
@@ -90,7 +90,7 @@ describe('Interpolator', () => {
       }
     ]
 
-    tests.forEach(test => {
+    tests.forEach((test) => {
       describe(test.description || 'when called with ' + JSON.stringify(test.options), () => {
         let ip
 
@@ -127,7 +127,7 @@ describe('Interpolator', () => {
       { args: ['test {{test, lowercase}}', { test: 'DOWN' }], expected: 'test down' }
     ]
 
-    tests.forEach(test => {
+    tests.forEach((test) => {
       it('correctly interpolates for ' + JSON.stringify(test.args) + ' args', () => {
         should(ip.interpolate.apply(ip, test.args)).eql(test.expected)
       })
@@ -160,7 +160,7 @@ describe('Interpolator', () => {
 
     const tests = [{ args: ['test {{test | uppercase}}', { test: 'up' }], expected: 'test UP' }]
 
-    tests.forEach(test => {
+    tests.forEach((test) => {
       it('correctly interpolates for ' + JSON.stringify(test.args) + ' args', () => {
         should(ip.interpolate.apply(ip, test.args)).eql(test.expected)
       })
@@ -185,7 +185,7 @@ describe('Interpolator', () => {
       { args: ['test {{test}}', { test: 'DOWN' }], expected: 'test down' }
     ]
 
-    tests.forEach(test => {
+    tests.forEach((test) => {
       it('correctly interpolates for ' + JSON.stringify(test.args) + ' args', () => {
         should(ip.interpolate.apply(ip, test.args)).eql(test.expected)
       })
@@ -229,7 +229,7 @@ describe('Interpolator', () => {
       }
     ]
 
-    tests.forEach(test => {
+    tests.forEach((test) => {
       it('correctly interpolates for ' + JSON.stringify(test.args) + ' args', () => {
         should(ip.interpolate.apply(ip, test.args)).eql(test.expected)
       })
@@ -250,7 +250,7 @@ describe('Interpolator', () => {
       }
     ]
 
-    tests.forEach(test => {
+    tests.forEach((test) => {
       it('correctly interpolates for ' + JSON.stringify(test.args) + ' args', () => {
         should(ip.interpolate.apply(ip, test.args)).eql(test.expected)
       })
@@ -273,7 +273,7 @@ describe('Interpolator', () => {
       }
     ]
 
-    tests.forEach(test => {
+    tests.forEach((test) => {
       it('correctly interpolates for ' + JSON.stringify(test.args) + ' args', () => {
         should(ip.interpolate.apply(ip, test.args)).eql(test.expected)
       })
@@ -294,7 +294,7 @@ describe('Interpolator', () => {
       })
     })
 
-    tests.forEach(test => {
+    tests.forEach((test) => {
       it(
         'correctly calls missingInterpolationHandler for ' + JSON.stringify(test.args) + ' args',
         () => {
@@ -319,7 +319,7 @@ describe('Interpolator', () => {
       })
     })
 
-    tests.forEach(test => {
+    tests.forEach((test) => {
       it(
         'correctly calls missingInterpolationHandler for ' + JSON.stringify(test.args) + ' args',
         () => {
@@ -349,7 +349,7 @@ describe('Interpolator', () => {
       })
     })
 
-    tests.forEach(test => {
+    tests.forEach((test) => {
       it('correctly interpolates for ' + JSON.stringify(test.args) + ' args', () => {
         should(ip.interpolate.apply(ip, test.args)).eql(test.expected)
       })

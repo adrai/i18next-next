@@ -47,7 +47,7 @@ describe('Translator', () => {
       }
     ]
 
-    tests.forEach(test => {
+    tests.forEach((test) => {
       it('correctly return key for ' + JSON.stringify(test.args) + ' args in cimode', () => {
         should(i18n.t.apply(i18n, test.args)).eql(test.expected)
       })
