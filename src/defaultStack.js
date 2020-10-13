@@ -87,7 +87,7 @@ const getI18nextFormat = (i18n) => {
       if (typeof keys === 'string') keys = [keys]
       let found, usedKey, exactUsedKey, usedLng, usedNS
 
-      const codes = run.resolveHierarchyHooks(options.lng || i18n.language, options.fallbackLng)
+      const codes = options.lngs ? options.lngs : run.resolveHierarchyHooks(options.lng || i18n.language, options.fallbackLng)
 
       // forEach possible key
       keys.forEach((k) => {

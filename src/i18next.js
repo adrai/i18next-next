@@ -513,9 +513,9 @@ class I18next extends EventEmitter {
     if (typeof lng === 'string') {
       fixedT.lng = lng
     } else {
-      fixedT.lngs = lng || []
+      fixedT.lngs = lng
     }
-    fixedT.ns = ns || undefined
+    fixedT.ns = ns
     return fixedT
   }
 
