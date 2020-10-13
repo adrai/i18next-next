@@ -14,6 +14,7 @@ class I18next extends EventEmitter {
     this.isInitialized = false
     const defOpt = getDefaults()
     this.loading = {}
+    this.hooks = {}
     this.options = { ...defOpt, ...options }
     if (options.interpolation) this.options = { ...this.options, interpolation: { ...defOpt.interpolation, ...options.interpolation } }
     if (options.interpolation && options.interpolation.defaultVariables) this.options.interpolation.defaultVariables = options.interpolation.defaultVariables
@@ -72,11 +73,11 @@ class I18next extends EventEmitter {
     throwIf.alreadyInitializedFn(this)(`addHook(${name})`)
 
     if (type) {
-      this[`${name}Hooks`] = this[`${name}Hooks`] || {}
-      this[`${name}Hooks`][type] = hook
+      this.hooks[name] = this.hooks[name] || {}
+      this.hooks[name][type] = hook
     } else {
-      this[`${name}Hooks`] = this[`${name}Hooks`] || []
-      this[`${name}Hooks`].push(hook)
+      this.hooks[name] = this.hooks[name] || []
+      this.hooks[name].push(hook)
     }
     return this
   }
@@ -87,7 +88,7 @@ class I18next extends EventEmitter {
     baseLogger.init(this._logger, this.options)
     this.logger = baseLogger
 
-    const { sync: syncOptions, async: asyncOptions } = runAsyncLater(this.extendOptionsHooks, [{ ...this.options }])
+    const { sync: syncOptions, async: asyncOptions } = runAsyncLater(this.hooks.extendOptions, [{ ...this.options }])
     syncOptions.forEach((opt) => {
       this.options = { ...opt, ...this.options }
     })
@@ -102,8 +103,18 @@ class I18next extends EventEmitter {
       })
     }
 
+    const { async: asyncInit } = runAsyncLater(this.hooks.initializing, [this.options])
+    if (asyncInit.length > 0) {
+      if (this.options.initImmediate === false) {
+        const msg = 'You set initImmediate to false but are using an asynchronous initializing hook'
+        this.logger.error(msg)
+        throw new Error(msg)
+      }
+      await Promise.all(asyncInit)
+    }
+
     this.use(defaultStack)
-    if (!this.resolveHooks || this.resolveHooks.length === 0) {
+    if (!this.hooks.resolve || this.hooks.resolve.length === 0) {
       this.addHook('resolve', (key, data, options) => {
         const { ns, lng } = this.extractFromKey(typeof key === 'string' ? key : key[key.length - 1], options)
         return deepFind((data && data[lng] && data[lng][ns]) || {}, key)
@@ -113,7 +124,7 @@ class I18next extends EventEmitter {
     this.language = this.options.lng
     if (!this.language && this.options.fallbackLng) this.languages = [this.options.fallbackLng]
 
-    const { sync: syncRes, async: asyncRes } = runAsyncLater(this.loadResourcesHooks, [this.options])
+    const { sync: syncRes, async: asyncRes } = runAsyncLater(this.hooks.loadResources, [this.options])
     let resources = syncRes.reduce((prev, curr) => ({ ...prev, ...curr }), {})
     if (asyncRes.length > 0) {
       if (this.options.initImmediate === false) {
@@ -133,17 +144,17 @@ class I18next extends EventEmitter {
     if (this.language && this.options.preload.indexOf(this.language) < 0) this.options.preload.unshift(this.language)
 
     this.isInitialized = true
-    if (this.options.preload.length > 0 && this.readHooks && this.readHooks.length > 0) {
+    if (this.options.preload.length > 0 && this.hooks.read && this.hooks.read.length > 0) {
       const toLoad = this.options.preload.reduce((prev, curr) => {
         prev[curr] = this.store.getSeenNamespaces()
         return prev
       }, {})
 
-      for (const hook of this.readHooks) {
+      for (const hook of this.hooks.read) {
         let read = hook(toLoad)
         if (read && typeof read.then === 'function') {
           if (this.options.initImmediate === false) {
-            const msg = `You set initImmediate to false but are using an asynchronous read hook (${this.readHooks.indexOf(hook) + 1}. hook)`
+            const msg = `You set initImmediate to false but are using an asynchronous read hook (${this.hooks.read.indexOf(hook) + 1}. hook)`
             this.logger.error(msg, hook.toString())
             throw new Error(msg)
           } else {
@@ -161,9 +172,9 @@ class I18next extends EventEmitter {
       }
     }
 
-    const hasLanguageDetection = this.detectLanguageHooks && this.detectLanguageHooks.length > 0
+    const hasLanguageDetection = this.hooks.detectLanguage && this.hooks.detectLanguage.length > 0
     if (!this.language && !hasLanguageDetection) this.logger.warn('init: no lng is defined and no languageDetector is used')
-    const hasLanguageCaching = this.cacheLanguageHooks && this.cacheLanguageHooks.length > 0
+    const hasLanguageCaching = this.hooks.cacheLanguage && this.hooks.cacheLanguage.length > 0
     if (this.options.initImmediate === false || (!hasLanguageDetection && !hasLanguageCaching)) this.changeLanguage(this.language)
     else await this.changeLanguage(this.language)
 
@@ -175,7 +186,7 @@ class I18next extends EventEmitter {
 
   async load (toLoad, tried = 0, delay = 350) {
     // throwIf.notInitializedFn(this)('load')
-    if (!this.readHooks) return
+    if (!this.hooks.read) return
 
     Object.keys(toLoad).forEach((lng) => {
       toLoad[lng].forEach((ns) => {
@@ -192,7 +203,7 @@ class I18next extends EventEmitter {
       })
     })
     if (Object.keys(toLoad).length === 0) return
-    for (const hook of this.readHooks) {
+    for (const hook of this.hooks.read) {
       let read
       let shouldRetry = false
       try {
@@ -303,7 +314,7 @@ class I18next extends EventEmitter {
     // we're in cimode so this shall pass
     if (!lng && this.language === 'cimode') lng = this.language
     if (lng && lng.toLowerCase() === 'cimode') return true
-    if (!this.readHooks || this.readHooks.length === 0) return true
+    if (!this.hooks.read || this.hooks.read.length === 0) return true
     return this.store.hasResourceBundle(lng)
   }
 
@@ -311,7 +322,7 @@ class I18next extends EventEmitter {
     // we're in cimode so this shall pass
     if (!lng && this.language === 'cimode') lng = this.language
     if (lng && lng.toLowerCase() === 'cimode') return true
-    if (!this.readHooks || this.readHooks.length === 0) return true
+    if (!this.hooks.read || this.hooks.read.length === 0) return true
     return this.store.hasResourceBundle(lng, ns)
   }
 
@@ -389,23 +400,23 @@ class I18next extends EventEmitter {
   }
 
   getBestMatchFromCodes (lngs) {
-    return run(this).bestMatchFromCodesHooks(lngs)
+    return run(this).bestMatchFromCodes(lngs)
   }
 
   getFallbackCodes (fallbackLng, lng) {
-    return run(this).fallbackCodesHooks(fallbackLng, lng)
+    return run(this).fallbackCodes(fallbackLng, lng)
   }
 
   toResolveHierarchy (lng, fallbackLng) {
-    return run(this).resolveHierarchyHooks(lng, fallbackLng)
+    return run(this).resolveHierarchy(lng, fallbackLng)
   }
 
   async cacheLanguage (lng) {
-    return run(this).cacheLanguageHooks(lng)
+    return run(this).cacheLanguage(lng)
   }
 
   async detectLanguage (...args) {
-    return run(this).detectLanguageHooks.apply(this, args)
+    return run(this).detectLanguage.apply(this, args)
   }
 
   async changeLanguage (lng) {
@@ -456,7 +467,7 @@ class I18next extends EventEmitter {
   }
 
   exists (key, options = {}) {
-    return !!run(this).resolveHooks(key, options)
+    return !!run(this).resolve(key, options)
   }
 
   t (key, options = {}) {
@@ -495,10 +506,10 @@ class I18next extends EventEmitter {
       return k
     }
 
-    let resolved = run(this).resolveHooks(key, options)
+    let resolved = run(this).resolve(key, options)
     if (typeof resolved !== 'object') resolved = { res: resolved, usedKey: key, exactUsedKey: key, usedLng: lng }
 
-    return run(this).translatedHooks(resolved.res, key, resolved, options)
+    return run(this).translated(resolved.res, key, resolved, options)
   }
 
   getFixedT (lng, ns) {

@@ -14,6 +14,19 @@ describe('i18next', () => {
         setTimeout(() => resolve({ another: 'thing' }), 50)
       })
     })
+    let calledI1 = false
+    let calledI2 = false
+    i18nextInstance.addHook('initializing', () => {
+      calledI1 = true
+    })
+    i18nextInstance.addHook('initializing', () => {
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          calledI2 = true
+          resolve()
+        }, 50)
+      })
+    })
     i18nextInstance.addHook('loadResources', () => ({
       en: {
         translation: {
@@ -22,6 +35,8 @@ describe('i18next', () => {
       }
     }))
     await i18nextInstance.init()
+    should(calledI1).eql(true)
+    should(calledI2).eql(true)
     should(i18nextInstance.options).have.properties({
       some: 'options',
       add: 'this',

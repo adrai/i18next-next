@@ -6,11 +6,11 @@ import { run as runH, runHooks } from './hooks.js'
 const getI18nextFormat = (i18n) => {
   const run = runH(i18n)
   const runSpecific = {
-    postProcessHooks (postProcessorNames, value, key, opt) {
-      if (!i18n.postProcessHooks) return value
+    postProcess (postProcessorNames, value, key, opt) {
+      if (!i18n.hooks.postProcess) return value
       postProcessorNames.forEach((n) => {
-        if (i18n.postProcessHooks[n]) {
-          value = i18n.postProcessHooks[n](value, key, opt)
+        if (i18n.hooks.postProcess[n]) {
+          value = i18n.hooks.postProcess[n](value, key, opt)
         } else {
           i18n.logger.warn(`No post processor found with name "${n}"`)
         }
@@ -18,57 +18,57 @@ const getI18nextFormat = (i18n) => {
       return value
     },
 
-    parseI18nFormatHooks (res, options, lng, ns, key, info) {
-      if (!i18n.parseI18nFormatHooks) return res
-      for (const hook of i18n.parseI18nFormatHooks) {
+    parseI18nFormat (res, options, lng, ns, key, info) {
+      if (!i18n.hooks.parseI18nFormat) return res
+      for (const hook of i18n.hooks.parseI18nFormat) {
         const parsed = hook(res, options, lng, ns, key, info)
         if (parsed !== undefined) return parsed
       }
       return res
     },
 
-    addI18nFormatLookupKeysHooks (finalKeys, key, code, ns, options) {
-      if (!i18n.addI18nFormatLookupKeysHooks) return
-      i18n.addI18nFormatLookupKeysHooks.forEach((hook) => hook(finalKeys, key, code, ns, options))
+    addI18nFormatLookupKeys (finalKeys, key, code, ns, options) {
+      if (!i18n.hooks.addI18nFormatLookupKeys) return
+      i18n.hooks.addI18nFormatLookupKeys.forEach((hook) => hook(finalKeys, key, code, ns, options))
     },
 
-    async handleMissingKeyHooks (key, ns, lng, value, options) {
-      if (!i18n.handleMissingKeyHooks) return
-      return runHooks(i18n.handleMissingKeyHooks, [key, ns, lng, value, options])
+    async handleMissingKey (key, ns, lng, value, options) {
+      if (!i18n.hooks.handleMissingKey) return
+      return runHooks(i18n.hooks.handleMissingKey, [key, ns, lng, value, options])
     },
 
-    async handleUpdateKeyHooks (key, ns, lng, value, options) {
-      if (!i18n.handleUpdateKeyHooks) return
-      return runHooks(i18n.handleUpdateKeyHooks, [key, ns, lng, value, options])
+    async handleUpdateKey (key, ns, lng, value, options) {
+      if (!i18n.hooks.handleUpdateKey) return
+      return runHooks(i18n.hooks.handleUpdateKey, [key, ns, lng, value, options])
     },
 
-    resolveContextHooks (context, key, options) {
-      if (!i18n.resolveContextHooks) return
-      for (const hook of i18n.resolveContextHooks) {
+    resolveContext (context, key, options) {
+      if (!i18n.hooks.resolveContext) return
+      for (const hook of i18n.hooks.resolveContext) {
         const resolvedKey = hook(context, key, options)
         if (resolvedKey !== undefined) return resolvedKey
       }
     },
 
-    formPluralsHooks (key, lng, options) {
-      if (!i18n.formPluralsHooks) return
-      for (const hook of i18n.formPluralsHooks) {
+    formPlurals (key, lng, options) {
+      if (!i18n.hooks.formPlurals) return
+      for (const hook of i18n.hooks.formPlurals) {
         const resolvedKeys = hook(key, lng, options)
         if (resolvedKeys !== undefined && resolvedKeys.length) return resolvedKeys
       }
     },
 
-    resolvePluralHooks (count, key, lng, options) {
-      if (!i18n.resolvePluralHooks) return
-      for (const hook of i18n.resolvePluralHooks) {
+    resolvePlural (count, key, lng, options) {
+      if (!i18n.hooks.resolvePlural) return
+      for (const hook of i18n.hooks.resolvePlural) {
         const resolvedKey = hook(count, key, lng, options)
         if (resolvedKey !== undefined) return resolvedKey
       }
     },
 
-    resolveKeyHooks (key, ns, lng, data, options) {
-      if (!i18n.resolveKeyHooks) return
-      for (const hook of i18n.resolveKeyHooks) {
+    resolveKey (key, ns, lng, data, options) {
+      if (!i18n.hooks.resolveKey) return
+      for (const hook of i18n.hooks.resolveKey) {
         const resolvedValue = hook(key, ns, lng, data, options)
         if (resolvedValue !== undefined) return resolvedValue
       }
@@ -87,7 +87,7 @@ const getI18nextFormat = (i18n) => {
       if (typeof keys === 'string') keys = [keys]
       let found, usedKey, exactUsedKey, usedLng, usedNS
 
-      const codes = options.lngs ? options.lngs : run.resolveHierarchyHooks(options.lng || i18n.language, options.fallbackLng)
+      const codes = options.lngs ? options.lngs : run.resolveHierarchy(options.lng || i18n.language, options.fallbackLng)
 
       // forEach possible key
       keys.forEach((k) => {
@@ -120,22 +120,22 @@ const getI18nextFormat = (i18n) => {
             const finalKeys = [key]
             exactUsedKey = finalKeys[finalKeys.length - 1]
 
-            runSpecific.addI18nFormatLookupKeysHooks(finalKeys, key, code, ns, options)
+            runSpecific.addI18nFormatLookupKeys(finalKeys, key, code, ns, options)
 
             if (options[i18n.options.pluralOptionProperty] !== undefined) {
-              const resolvedKey = runSpecific.resolvePluralHooks(options[i18n.options.pluralOptionProperty], key, code, options)
+              const resolvedKey = runSpecific.resolvePlural(options[i18n.options.pluralOptionProperty], key, code, options)
               finalKeys.push(resolvedKey)
             }
 
             if (options[i18n.options.contextOptionProperty] !== undefined) {
-              const resolvedKey = runSpecific.resolveContextHooks(options[i18n.options.contextOptionProperty], key, options)
+              const resolvedKey = runSpecific.resolveContext(options[i18n.options.contextOptionProperty], key, options)
               finalKeys.push(resolvedKey)
             }
 
             if (options[i18n.options.pluralOptionProperty] !== undefined && options[i18n.options.contextOptionProperty] !== undefined) {
-              let resolvedKey = runSpecific.resolveContextHooks(options[i18n.options.contextOptionProperty], key, options)
+              let resolvedKey = runSpecific.resolveContext(options[i18n.options.contextOptionProperty], key, options)
               if (resolvedKey) {
-                resolvedKey = runSpecific.resolvePluralHooks(options[i18n.options.pluralOptionProperty], resolvedKey, code, options)
+                resolvedKey = runSpecific.resolvePlural(options[i18n.options.pluralOptionProperty], resolvedKey, code, options)
                 finalKeys.push(resolvedKey)
               }
             }
@@ -144,7 +144,7 @@ const getI18nextFormat = (i18n) => {
             let possibleKey
             while ((possibleKey = finalKeys.pop()) && !this.isValidLookup(found)) {
               exactUsedKey = possibleKey
-              found = runSpecific.resolveKeyHooks(possibleKey, ns, code, data, options)
+              found = runSpecific.resolveKey(possibleKey, ns, code, data, options)
             }
           })
         })
@@ -157,7 +157,7 @@ const getI18nextFormat = (i18n) => {
     extendTranslation (res, key, resolved, options = {}) {
       if (res === undefined) return res
 
-      const newRes = runSpecific.parseI18nFormatHooks(
+      const newRes = runSpecific.parseI18nFormat(
         res,
         options,
         resolved.usedLng,
@@ -170,7 +170,7 @@ const getI18nextFormat = (i18n) => {
       if (res === newRes && !skipInterpolation) {
         let data = options.replace && typeof options.replace !== 'string' ? options.replace : options
         if (i18n.options.interpolation.defaultVariables) data = { ...i18n.options.interpolation.defaultVariables, ...data }
-        res = run.interpolateHooks(res, data, options.lng || i18n.language, options)
+        res = run.interpolate(res, data, options.lng || i18n.language, options)
       } else {
         res = newRes
       }
@@ -178,7 +178,7 @@ const getI18nextFormat = (i18n) => {
       const postProcess = options.postProcess || i18n.options.postProcess
       const postProcessorNames = typeof postProcess === 'string' ? [postProcess] : postProcess
       if (res !== undefined && postProcessorNames && postProcessorNames.length) {
-        res = runSpecific.postProcessHooks(postProcessorNames, res, key, options)
+        res = runSpecific.postProcess(postProcessorNames, res, key, options)
       }
 
       return res
@@ -196,8 +196,7 @@ const getI18nextFormat = (i18n) => {
         if (!this.isValidLookup(res) && options.defaultValue !== undefined) {
           usedDefault = true
           if (options[i18n.options.pluralOptionProperty] !== undefined) {
-            let pluralKey = runSpecific.resolvePluralHooks(options[i18n.options.pluralOptionProperty], key, lng, options)
-            pluralKey = pluralKey.replace(key, 'defaultValue')
+            const pluralKey = runSpecific.resolvePlural(options[i18n.options.pluralOptionProperty], 'defaultValue', lng, options)
             res = options[pluralKey]
           }
           if (!res) res = options.defaultValue
@@ -220,11 +219,11 @@ const getI18nextFormat = (i18n) => {
           )
 
           let lngs = []
-          const fallbackLngs = run.fallbackCodesHooks(i18n.options.fallbackLng, lng)
+          const fallbackLngs = run.fallbackCodes(i18n.options.fallbackLng, lng)
           if (i18n.options.saveMissingTo === 'fallback' && fallbackLngs && fallbackLngs[0]) {
             for (let i = 0; i < fallbackLngs.length; i++) lngs.push(fallbackLngs[i])
           } else if (i18n.options.saveMissingTo === 'all') {
-            lngs = run.resolveHierarchyHooks(lng)
+            lngs = run.resolveHierarchy(lng)
           } else {
             lngs.push(lng)
           }
@@ -239,9 +238,9 @@ const getI18nextFormat = (i18n) => {
             }
             const send = async (l, k) => {
               if (updateMissing) {
-                await runSpecific.handleUpdateKeyHooks(k, ns, l, res, options)
+                await runSpecific.handleUpdateKey(k, ns, l, res, options)
               } else {
-                await runSpecific.handleMissingKeyHooks(k, ns, l, options.defaultValue || res, options)
+                await runSpecific.handleMissingKey(k, ns, l, options.defaultValue || res, options)
               }
               i18n.emit('missingKey', l, ns, k, res)
             }
@@ -249,7 +248,7 @@ const getI18nextFormat = (i18n) => {
             const needsPluralHandling = options[i18n.options.pluralOptionProperty] !== undefined && typeof options[i18n.options.pluralOptionProperty] !== 'string'
             if (i18n.options.saveMissingPlurals && needsPluralHandling) {
               lngs.forEach((l) => {
-                const plurals = runSpecific.formPluralsHooks(key, l, options)
+                const plurals = runSpecific.formPlurals(key, l, options)
                 plurals.forEach(p => send([l], p))
               })
             } else {

@@ -40,11 +40,11 @@ export default function compatibilityLayer (m, opt = {}) {
         },
         languageDetector: {
           detect: (...args) => {
-            if (!i18n.detectLanguageHooks) return
-            for (const hook of i18n.detectLanguageHooks) {
+            if (!i18n.hooks.detectLanguage) return
+            for (const hook of i18n.hooks.detectLanguage) {
               const ret = hook.apply(this, args)
               if (ret && typeof ret.then === 'function') {
-                const msg = `You are using an asynchronous detectLanguage hook (${i18n.detectLanguageHooks.indexOf(hook) + 1}. hook)`
+                const msg = `You are using an asynchronous detectLanguage hook (${i18n.hooks.detectLanguage.indexOf(hook) + 1}. hook)`
                 i18n.logger.error(msg, hook.toString())
                 throw new Error(msg)
               }
@@ -169,7 +169,7 @@ export default function compatibilityLayer (m, opt = {}) {
         module.init(i18n)
       }
 
-      if (!i18n.services.backendConnector && i18n.readHooks && i18n.readHooks.length > 0) {
+      if (!i18n.services.backendConnector && i18n.hooks.read && i18n.hooks.read.length > 0) {
         i18n.services.backendConnector = {
           backend: true,
           get state () {
