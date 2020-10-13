@@ -255,6 +255,7 @@ const getI18nextFormat = (i18n) => {
       if (res !== undefined) {
         const handleAsObject = typeof res !== 'string' && typeof res !== 'boolean' && typeof res !== 'number'
         const keySeparator = options.keySeparator !== undefined ? options.keySeparator : i18n.options.keySeparator
+        const joinArrays = options.joinArrays !== undefined ? options.joinArrays : i18n.options.joinArrays
         if (handleAsObject && keySeparator) {
           const resType = Object.prototype.toString.apply(res)
           const resTypeIsArray = resType === '[object Array]'
@@ -271,6 +272,10 @@ const getI18nextFormat = (i18n) => {
             }
           }
           res = copy
+          if (resTypeIsArray && typeof joinArrays === 'string') {
+            // array special treatment
+            res = res.join(joinArrays)
+          }
         }
       }
 
