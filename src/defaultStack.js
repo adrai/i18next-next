@@ -279,7 +279,7 @@ const getI18nextFormat = (i18n) => {
               const deepKey = `${newKeyToUse}${keySeparator}${m}`
               copy[m] = i18n.t(deepKey, {
                 ...options,
-                ...{ joinArrays: false, namespaces }
+                ...{ joinArrays: false, ns: namespaces }
               })
               if (copy[m] === deepKey) copy[m] = res[m] // if nothing found use orginal value as fallback
             }

@@ -47,5 +47,6 @@ i18n.t('my.key') // a value
 - interpolation no nesting
 - interpolation automatic escaping of regex prefixes/suffixes
 - automatic detection when using natural language keys
+- automatic detection when returning objects
 - more customizable
 - separate compatability layer for plugins
