@@ -1,7 +1,7 @@
 import i18next from '../index.js'
 import should from 'should'
 
-describe.only('Translator', () => {
+describe('Translator', () => {
   describe('translate() with plural', () => {
     let i18n
 
@@ -10,7 +10,8 @@ describe.only('Translator', () => {
       i18n.addHook('loadResources', () => ({
         en: {
           translation: {
-            test: 'test_en',
+            test: 'test_en_without_count',
+            test_one: 'test_en',
             test_other: 'tests_en'
           }
         },
@@ -25,12 +26,24 @@ describe.only('Translator', () => {
             test: 'test_ja',
             test_other: 'tests_ja'
           }
+        },
+        ar: {
+          translation: {
+            test: 'test_ar',
+            test_few: 'tests_ar_few',
+            test_many: 'tests_ar_many',
+            test_one: 'tests_ar_one', // this could also be skippet, when test key is there without plural form (it's the fallback)
+            test_two: 'tests_ar_two',
+            test_zero: 'tests_ar_zero',
+            test_other: 'tests_ar_other'
+          }
         }
       }))
       await i18n.init()
     })
 
     const tests = [
+      { args: ['translation:test', {}], expected: 'test_en_without_count' },
       { args: ['translation:test', { count: 1 }], expected: 'test_en' },
       { args: ['translation:test', { count: 2 }], expected: 'tests_en' },
       { args: ['translation:test', { count: 1, lngs: ['en-US', 'en'] }], expected: 'test_en' },
@@ -45,7 +58,14 @@ describe.only('Translator', () => {
       { args: ['translation:test', { count: 2, lng: 'en-US' }], expected: 'tests_en' },
       { args: ['translation:test', { count: 1, lng: 'ja' }], expected: 'tests_ja' },
       { args: ['translation:test', { count: 2, lng: 'ja' }], expected: 'tests_ja' },
-      { args: ['translation:test', { count: 10, lng: 'ja' }], expected: 'tests_ja' }
+      { args: ['translation:test', { count: 10, lng: 'ja' }], expected: 'tests_ja' },
+      { args: ['translation:test', { lng: 'ar' }], expected: 'test_ar' },
+      { args: ['translation:test', { count: 0, lng: 'ar' }], expected: 'tests_ar_zero' },
+      { args: ['translation:test', { count: 1, lng: 'ar' }], expected: 'tests_ar_one' },
+      { args: ['translation:test', { count: 2, lng: 'ar' }], expected: 'tests_ar_two' },
+      { args: ['translation:test', { count: 3, lng: 'ar' }], expected: 'tests_ar_few' },
+      { args: ['translation:test', { count: 15, lng: 'ar' }], expected: 'tests_ar_many' },
+      { args: ['translation:test', { count: 101, lng: 'ar' }], expected: 'tests_ar_other' }
     ]
 
     tests.forEach((test) => {
