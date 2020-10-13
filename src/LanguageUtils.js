@@ -5,6 +5,7 @@ const capitalize = (string) => string.charAt(0).toUpperCase() + string.slice(1)
 class LanguageUtils {
   constructor (options = {}) {
     this.options = options
+    this.supportedLngs = this.options.supportedLngs || false
     this.logger = baseLogger.create('languageUtils')
   }
 
