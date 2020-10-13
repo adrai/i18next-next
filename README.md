@@ -39,3 +39,12 @@ await i18n.init()
 
 i18n.t('my.key') // a value
 ```
+
+## Some differences:
+
+- Intl plural rules
+- handles nested and flat resources automatically
+- interpolation no nesting
+- interpolation automatic escaping of regex prefixes/suffixes
+- automatic detection when using natural language keys
+- more customizable
