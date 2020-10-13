@@ -133,7 +133,7 @@ class I18next extends EventEmitter {
     if (this.language && this.options.preload.indexOf(this.language) < 0) this.options.preload.unshift(this.language)
 
     this.isInitialized = true
-    if (this.options.preload.length > 0 && this.readHooks) {
+    if (this.options.preload.length > 0 && this.readHooks && this.readHooks.length > 0) {
       const toLoad = this.options.preload.reduce((prev, curr) => {
         prev[curr] = this.store.getSeenNamespaces()
         return prev
@@ -193,13 +193,20 @@ class I18next extends EventEmitter {
     })
     if (Object.keys(toLoad).length === 0) return
     for (const hook of this.readHooks) {
-      const ret = hook(toLoad)
       let read
       let shouldRetry = false
       try {
+        const ret = hook(toLoad)
         read = await (ret && typeof ret.then === 'function' ? ret : Promise.resolve(ret))
       } catch (err) {
-        if (!err.retry || tried > 5) throw err
+        if (!err.retry || tried > 5) {
+          Object.keys(toLoad).forEach((lng) => {
+            toLoad[lng].forEach((ns) => {
+              this.store.addResourceBundle(lng, ns, {}, { silent: true })
+            })
+          })
+          throw err
+        }
         shouldRetry = true
       } finally {
         Object.keys(toLoad).forEach((lng) => {
@@ -242,7 +249,7 @@ class I18next extends EventEmitter {
       return prev
     }, {})
     try {
-      return this.load(toLoad)
+      await this.load(toLoad)
     } catch (err) {
       const nsPart = ns.length === 1 ? `loading namespace "${ns[0]}"` : `loading namespaces "${ns.join(',')}"`
       const lngPart = lngs.length === 1 ? `for language "${lngs[0]}"` : `for languages "${lngs.join(',')}"`
@@ -261,29 +268,31 @@ class I18next extends EventEmitter {
 
     if (lng && typeof lng !== 'string') lng = this.language
     if (!lng) lng = this.language
+    let toLoad
     if (lng) {
-      const toLoad = {
+      toLoad = {
         [lng]: ns
       }
       const lngs = this.toResolveHierarchy(lng)
       lngs.forEach(l => {
         if (!toLoad[l]) toLoad[l] = ns
       })
-      try {
-        return this.load(toLoad)
-      } catch (err) {
-        const nsPart = ns.length === 1 ? `loading namespace "${ns[0]}"` : `loading namespaces "${ns.join(',')}"`
-        this.logger.warn(`${nsPart} for language "${lng}" failed`, err)
-        // throw err
-      }
+    } else {
+      // at least load fallbacks in this case
+      const fallbacks = this.getFallbackCodes(this.options.fallbackLng)
+      toLoad = fallbacks.reduce((prev, curr) => {
+        prev[curr] = ns
+        return prev
+      }, {})
     }
 
-    // at least load fallbacks in this case
-    const fallbacks = this.getFallbackCodes(this.options.fallbackLng)
-    return fallbacks.reduce((prev, curr) => {
-      prev[curr] = ns
-      return prev
-    }, {})
+    try {
+      await this.load(toLoad)
+    } catch (err) {
+      const nsPart = ns.length === 1 ? `loading namespace "${ns[0]}"` : `loading namespaces "${ns.join(',')}"`
+      this.logger.warn(`${nsPart} for language "${lng}" failed`, err)
+      // throw err
+    }
   }
 
   async loadNamespace (ns, lng) {
@@ -291,10 +300,18 @@ class I18next extends EventEmitter {
   }
 
   isLanguageLoaded (lng) {
+    // we're in cimode so this shall pass
+    if (!lng && this.language === 'cimode') lng = this.language
+    if (lng && lng.toLowerCase() === 'cimode') return true
+    if (!this.readHooks || this.readHooks.length === 0) return true
     return this.store.hasResourceBundle(lng)
   }
 
   isNamespaceLoaded (ns, lng) {
+    // we're in cimode so this shall pass
+    if (!lng && this.language === 'cimode') lng = this.language
+    if (lng && lng.toLowerCase() === 'cimode') return true
+    if (!this.readHooks || this.readHooks.length === 0) return true
     return this.store.hasResourceBundle(lng, ns)
   }
 
