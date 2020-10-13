@@ -53,6 +53,7 @@ export function getDefaults () {
       }
       return ret
     },
+    skipInterpolation: false,
     interpolation: {
       format: (value, format, lng, options) => value,
       formatSeparator: ',',

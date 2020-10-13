@@ -166,7 +166,8 @@ const getI18nextFormat = (i18n) => {
         { resolved }
       )
 
-      if (res === newRes && !options.skipInterpolation) {
+      const skipInterpolation = options.skipInterpolation !== undefined ? options.skipInterpolation : i18n.options.skipInterpolation
+      if (res === newRes && !skipInterpolation) {
         let data = options.replace && typeof options.replace !== 'string' ? options.replace : options
         if (i18n.options.interpolation.defaultVariables) data = { ...i18n.options.interpolation.defaultVariables, ...data }
         res = run.interpolateHooks(res, data, options.lng || i18n.language, options)
@@ -265,10 +266,12 @@ const getI18nextFormat = (i18n) => {
       const resUsedKey = (resolved && resolved.usedKey) || key
       const resExactUsedKey = (resolved && resolved.exactUsedKey) || key
 
+      options.applyPostProcessor = options.applyPostProcessor !== undefined ? options.applyPostProcessor : true
+      const joinArrays = options.joinArrays !== undefined ? options.joinArrays : i18n.options.joinArrays
+      const joinActive = typeof joinArrays === 'string'
       if (res !== undefined) {
         const handleAsObject = typeof res !== 'string' && typeof res !== 'boolean' && typeof res !== 'number'
         const keySeparator = options.keySeparator !== undefined ? options.keySeparator : i18n.options.keySeparator
-        const joinArrays = options.joinArrays !== undefined ? options.joinArrays : i18n.options.joinArrays
         if (handleAsObject && keySeparator) {
           const resType = Object.prototype.toString.apply(res)
           const resTypeIsArray = resType === '[object Array]'
@@ -279,13 +282,14 @@ const getI18nextFormat = (i18n) => {
               const deepKey = `${newKeyToUse}${keySeparator}${m}`
               copy[m] = i18n.t(deepKey, {
                 ...options,
-                ...{ joinArrays: false, ns: namespaces }
+                ...{ joinArrays: false, ns: namespaces, applyPostProcessor: !joinActive }
               })
+              options.applyPostProcessor = joinActive
               if (copy[m] === deepKey) copy[m] = res[m] // if nothing found use orginal value as fallback
             }
           }
           res = copy
-          if (resTypeIsArray && typeof joinArrays === 'string') {
+          if (resTypeIsArray && joinActive) {
             // array special treatment
             res = res.join(joinArrays)
           }
@@ -296,7 +300,7 @@ const getI18nextFormat = (i18n) => {
       res = this.handleMissing(res, resExactUsedKey, key, ns, lng, options)
 
       // extend
-      res = this.extendTranslation(res, keys, resolved, options)
+      if (options.applyPostProcessor) res = this.extendTranslation(res, keys, resolved, options)
 
       return res
     }
