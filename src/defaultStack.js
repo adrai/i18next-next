@@ -132,6 +132,14 @@ const getI18nextFormat = (i18n) => {
               finalKeys.push(resolvedKey)
             }
 
+            if (options[i18n.options.pluralOptionProperty] !== undefined && options[i18n.options.contextOptionProperty] !== undefined) {
+              let resolvedKey = runSpecific.resolveContextHooks(options[i18n.options.contextOptionProperty], key, options)
+              if (resolvedKey) {
+                resolvedKey = runSpecific.resolvePluralHooks(options[i18n.options.pluralOptionProperty], resolvedKey, code, options)
+                finalKeys.push(resolvedKey)
+              }
+            }
+
             // iterate over finalKeys starting with most specific pluralkey (-> contextkey only) -> singularkey only
             let possibleKey
             while ((possibleKey = finalKeys.pop()) && !this.isValidLookup(found)) {
