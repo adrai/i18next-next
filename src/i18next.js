@@ -16,6 +16,7 @@ class I18next extends EventEmitter {
     this.loading = {}
     this.options = { ...defOpt, ...options }
     if (options.interpolation) this.options = { ...this.options, interpolation: { ...defOpt.interpolation, ...options.interpolation } }
+    if (options.interpolation && options.interpolation.defaultVariables) this.options.interpolation.defaultVariables = options.interpolation.defaultVariables
     this.language = this.options.lng
     if (this.language) this.languages = [this.language]
     if (!this.language && this.options.fallbackLng) this.languages = [this.options.fallbackLng]

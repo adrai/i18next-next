@@ -9,7 +9,8 @@ const entityMap = {
 
 const escape = (data) => {
   if (typeof data === 'string') {
-    return data.replace(/[&<>"'/]/g, s => entityMap[s])
+    // eslint-disable-next-line no-useless-escape
+    return data.replace(/[&<>"'\/]/g, s => entityMap[s])
   }
   return data
 }
@@ -56,8 +57,12 @@ export function getDefaults () {
       escapeValue: true,
       prefix: '{{',
       suffix: '}}',
+      unescapePrefix: '-',
+      unescapeSuffix: '',
       defaultVariables: {},
-      escape
+      escape,
+      maxReplaces: 1000, // max replaces to prevent endless loop
+      missingInterpolationHandler: false // function(str, match)
     }
   }
 }
