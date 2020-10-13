@@ -438,8 +438,8 @@ class I18next extends EventEmitter {
     let namespaces = options.ns || this.options.defaultNS
     const nsSeparator = options.nsSeparator !== undefined ? options.nsSeparator : this.options.nsSeparator
     const keySeparator = options.keySeparator !== undefined ? options.keySeparator : this.options.keySeparator
-    const wouldCheckForNsInKey = nsSeparator && key.indexOf(nsSeparator) > -1 && keySeparator
-    const seemsNaturalLanguage = !looksLikeObjectPath(key)
+    const wouldCheckForNsInKey = nsSeparator && key.indexOf(nsSeparator) > -1
+    const seemsNaturalLanguage = !looksLikeObjectPath(key, nsSeparator, keySeparator)
     if (wouldCheckForNsInKey && seemsNaturalLanguage) {
       this.logger.log(`skip to extract namespace:key from passed key "${key}, but key seems more like natural language`)
     }
@@ -448,7 +448,7 @@ class I18next extends EventEmitter {
       if (nsSeparator !== keySeparator || (nsSeparator === keySeparator && this.options.ns && this.options.ns.indexOf(parts[0]) > -1)) {
         namespaces = parts.shift()
       }
-      key = parts.join(keySeparator)
+      key = parts.join(keySeparator || '')
     }
     if (typeof namespaces === 'string') namespaces = [namespaces]
     const lng = options.lng || this.language

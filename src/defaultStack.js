@@ -311,7 +311,7 @@ const stack = {
     const i18nextFormat = getI18nextFormat(i18n)
 
     i18n.addHook('resolve', (key, data, options) => i18nextFormat.resolve(key, data, options))
-    i18n.addHook('resolveKey', (key, ns, lng, data, options) => deepFind((data && data[lng] && data[lng][ns]) || {}, key))
+    i18n.addHook('resolveKey', (key, ns, lng, data, options) => deepFind((data && data[lng] && data[lng][ns]) || {}, key, options && options.keySeparator !== undefined ? options.keySeparator : i18n.options.keySeparator))
     i18n.addHook('translated', (res, keys, resolved, options) => i18nextFormat.translated(res, keys, resolved, options))
 
     i18n.addHook('bestMatchFromCodes', (lngs) => languageUtils.getBestMatchFromCodes(lngs))

@@ -4,8 +4,12 @@ export const isIE10 =
   window.navigator.userAgent &&
   window.navigator.userAgent.indexOf('MSIE') > -1
 
-export function looksLikeObjectPath (key) {
-  return !/( |,|\?)/.test(key)
+const chars = [' ', ',', '?', '!', ';']
+export function looksLikeObjectPath (key, nsSeparator = '', keySeparator = '') {
+  const possibleChars = chars.filter((c) => nsSeparator.indexOf(c) < 0 || keySeparator.indexOf(c) < 0)
+  if (possibleChars.length === 0) return true
+  const r = new RegExp(`(${possibleChars.map((c) => c === '?' ? '\\?' : c).join('|')})`)
+  return !r.test(key)
 }
 
 export function deepFind (obj, path, keySeparator = '.') {
