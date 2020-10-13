@@ -21,8 +21,10 @@ export function getDefaults () {
     initImmediate: true,
     pluralOptionProperty: 'count',
     contextOptionProperty: 'context',
+    ns: ['translation'],
     defaultNS: 'translation',
     fallbackNS: false, // string or array of namespaces
+    fallbackLng: ['dev'],
     supportedLngs: false, // array with supported languages
     nonExplicitSupportedLngs: false,
     load: 'all', // | currentOnly | languageOnly
@@ -38,19 +40,19 @@ export function getDefaults () {
     appendNamespaceToCIMode: false,
     returnNull: true, // allows null value as valid translation
     returnEmptyString: true, // allows empty string value as valid translation
-    // overloadTranslationOptionHandler: (args) => {
-    //   let ret = {}
-    //   if (typeof args[1] === 'object') ret = args[1]
-    //   if (typeof args[1] === 'string') ret.defaultValue = args[1]
-    //   if (typeof args[2] === 'string') ret.tDescription = args[2]
-    //   if (typeof args[2] === 'object' || typeof args[3] === 'object') {
-    //     const options = args[3] || args[2]
-    //     Object.keys(options).forEach((key) => {
-    //       ret[key] = options[key]
-    //     })
-    //   }
-    //   return ret
-    // },
+    overloadTranslationOptionHandler: (args) => {
+      let ret = {}
+      if (typeof args[1] === 'object') ret = args[1]
+      if (typeof args[1] === 'string') ret.defaultValue = args[1]
+      if (typeof args[2] === 'string') ret.tDescription = args[2]
+      if (typeof args[2] === 'object' || typeof args[3] === 'object') {
+        const options = args[3] || args[2]
+        Object.keys(options).forEach((key) => {
+          ret[key] = options[key]
+        })
+      }
+      return ret
+    },
     interpolation: {
       format: (value, format, lng, options) => value,
       formatSeparator: ',',

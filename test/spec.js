@@ -425,7 +425,7 @@ describe('i18next', () => {
     should(missings).have.a.lengthOf(1)
     should(missings[0].key).eql('key')
     should(missings[0].ns).eql('translation')
-    should(missings[0].lng).eql(['de'])
+    should(missings[0].lng).eql(['dev'])
     should(missings[0].value).eql('a value for de/translation')
   })
 

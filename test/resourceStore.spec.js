@@ -52,21 +52,21 @@ describe('ResourceStore', () => {
         should(rs.getResource('de.translation.nest.object')).eql({ something: 'deeper' })
       })
 
-      it("it should emit 'added' event on addResource call", () => {
+      it("should emit 'added' event on addResource call", () => {
         const spy = sinon.spy()
         rs.on('added', spy)
         rs.addResource('fr', 'translation', 'hi', 'salut')
         should(spy.calledWithExactly('fr', 'translation', 'hi', 'salut')).be.true()
       })
 
-      it("it should not emit 'added' event on addResource call with silent option", () => {
+      it("should not emit 'added' event on addResource call with silent option", () => {
         const spy = sinon.spy()
         rs.on('added', spy)
         rs.addResource('fr', 'translation', 'hi', 'salut', { silent: true })
         should(spy.notCalled).be.true()
       })
 
-      it("it should emit 'added' event on addResources call", () => {
+      it("should emit 'added' event on addResources call", () => {
         const spy = sinon.spy()
         rs.on('added', spy)
         rs.addResources('fr', 'translation', {
@@ -76,7 +76,7 @@ describe('ResourceStore', () => {
         should(spy.calledOnce).be.true()
       })
 
-      it("it should not emit 'added' event on addResources call with silent option", () => {
+      it("should not emit 'added' event on addResources call with silent option", () => {
         const spy = sinon.spy()
         rs.on('added', spy)
         rs.addResources(
@@ -91,7 +91,7 @@ describe('ResourceStore', () => {
         should(spy.notCalled).be.true()
       })
 
-      it("it should emit 'added' event on addResourceBundle call", () => {
+      it("should emit 'added' event on addResourceBundle call", () => {
         const spy = sinon.spy()
         rs.on('added', spy)
         rs.addResourceBundle(
@@ -107,7 +107,7 @@ describe('ResourceStore', () => {
         should(spy.calledOnce).be.true()
       })
 
-      it("it should not emit 'added' event on addResourceBundle call with silent option", () => {
+      it("should not emit 'added' event on addResourceBundle call with silent option", () => {
         const spy = sinon.spy()
         rs.on('added', spy)
         rs.addResourceBundle(

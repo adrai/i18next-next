@@ -440,9 +440,9 @@ class I18next extends EventEmitter {
   t (key, options = {}) {
     // throwIf.notInitializedFn(this)('t')
 
-    // if (this.options.overloadTranslationOptionHandler) {
-    //   options = { ...options, ...this.options.overloadTranslationOptionHandler(arguments) }
-    // }
+    if (this.options.overloadTranslationOptionHandler) {
+      options = { ...options, ...this.options.overloadTranslationOptionHandler(arguments) }
+    }
 
     // non valid keys handling
     if (key === undefined || key === null) {
@@ -481,13 +481,12 @@ class I18next extends EventEmitter {
 
   getFixedT (lng, ns) {
     const fixedT = (key, opts, ...rest) => {
-      const options = { ...opts }
-      // let options
-      // if (typeof opts !== 'object') {
-      //   options = this.options.overloadTranslationOptionHandler([key, opts].concat(rest))
-      // } else {
-      //   options = { ...opts }
-      // }
+      let options
+      if (typeof opts !== 'object') {
+        options = this.options.overloadTranslationOptionHandler([key, opts].concat(rest))
+      } else {
+        options = { ...opts }
+      }
 
       options.lng = options.lng || fixedT.lng
       options.lngs = options.lngs || fixedT.lngs
@@ -497,16 +496,17 @@ class I18next extends EventEmitter {
     if (typeof lng === 'string') {
       fixedT.lng = lng
     } else {
-      fixedT.lngs = lng
+      fixedT.lngs = lng || []
     }
-    fixedT.ns = ns
+    fixedT.ns = ns || undefined
     return fixedT
   }
 
   clone (options = {}) {
     const mergedOptions = { ...this.options, ...options, ...{ isClone: true } }
+    mergedOptions.lng = mergedOptions.lng || this.language
     const clone = new I18next(mergedOptions)
-    const membersToCopy = ['store', 'language', 'languages']
+    const membersToCopy = ['store', 'languages']
     membersToCopy.forEach((m) => {
       clone[m] = this[m]
     })

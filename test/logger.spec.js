@@ -30,22 +30,22 @@ describe('logger', () => {
   })
 
   describe('converting', () => {
-    it('it should log', () => {
+    it('should log', () => {
       should(logger.log('hello').type).eql('log')
       should(logger.log('hello').args[0]).eql('i18next: hello')
     })
 
-    it('it should warn', () => {
+    it('should warn', () => {
       should(logger.warn('hello').type).eql('warn')
       should(logger.warn('hello').args[0]).eql('i18next: hello')
     })
 
-    it('it should error', () => {
+    it('should error', () => {
       should(logger.error('hello').type).eql('error')
       should(logger.error('hello').args[0]).eql('i18next: hello')
     })
 
-    it('it should warn deprecation', () => {
+    it('should warn deprecation', () => {
       should(logger.deprecate('hello').type).eql('warn')
       should(logger.deprecate('hello').args[0]).eql('WARNING DEPRECATED: i18next: hello')
     })

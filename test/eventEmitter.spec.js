@@ -8,7 +8,7 @@ describe('i18next', () => {
       emitter = new EventEmitter()
     })
 
-    it('it should emit', done => {
+    it('should emit', done => {
       // test on
       emitter.on('ok', payload => {
         should(payload).eql('data ok')
@@ -27,7 +27,7 @@ describe('i18next', () => {
       emitter.emit('ok', 'data ok')
     })
 
-    it('it should emit wildcard', done => {
+    it('should emit wildcard', done => {
       // test on
       emitter.on('*', (name, payload) => {
         should(name).eql('ok')
@@ -38,7 +38,7 @@ describe('i18next', () => {
       emitter.emit('ok', 'data ok')
     })
 
-    it('it should emit with array params', done => {
+    it('should emit with array params', done => {
       // test on
       emitter.on('array-event', (array, data) => {
         should(array).eql(['array ok 1', 'array ok 2'])
@@ -49,7 +49,7 @@ describe('i18next', () => {
       emitter.emit('array-event', ['array ok 1', 'array ok 2'], 'data ok')
     })
 
-    it('it should emit wildcard with array params', done => {
+    it('should emit wildcard with array params', done => {
       // test on
       emitter.on('*', (ev, array, data) => {
         should(ev).eql('array-event')
@@ -61,14 +61,14 @@ describe('i18next', () => {
       emitter.emit('array-event', ['array ok 1', 'array ok 2'], 'data ok')
     })
 
-    it('it should return itself', () => {
+    it('should return itself', () => {
       // test on
       const returned = emitter.on('*')
 
       should(returned).eql(emitter)
     })
 
-    it('it should correctly unbind observers', () => {
+    it('should correctly unbind observers', () => {
       const calls1 = []
       const listener1 = payload => {
         calls1.push(payload)
