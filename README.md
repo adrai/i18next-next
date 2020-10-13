@@ -48,3 +48,4 @@ i18n.t('my.key') // a value
 - interpolation automatic escaping of regex prefixes/suffixes
 - automatic detection when using natural language keys
 - more customizable
+- separate compatability layer for plugins
