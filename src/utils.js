@@ -4,6 +4,10 @@ export const isIE10 =
   window.navigator.userAgent &&
   window.navigator.userAgent.indexOf('MSIE') > -1
 
+export function looksLikeObjectPath (key) {
+  return !/( |,|\?)/.test(key)
+}
+
 export function deepFind (obj, path, keySeparator = '.') {
   if (obj[path]) return obj[path]
   const paths = path.split(keySeparator)

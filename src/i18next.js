@@ -1,7 +1,7 @@
 import baseLogger from './logger.js'
 import { getDefaults } from './defaults.js'
 import { run, runAsyncLater } from './hooks.js'
-import { isIE10, wait, deepFind } from './utils.js'
+import { isIE10, wait, deepFind, looksLikeObjectPath } from './utils.js'
 import EventEmitter from './EventEmitter.js'
 import ResourceStore from './ResourceStore.js'
 import throwIf from './throwIf.js'
@@ -435,10 +435,15 @@ class I18next extends EventEmitter {
   }
 
   extractFromKey (key, options = {}) {
+    let namespaces = options.ns || this.options.defaultNS
     const nsSeparator = options.nsSeparator !== undefined ? options.nsSeparator : this.options.nsSeparator
     const keySeparator = options.keySeparator !== undefined ? options.keySeparator : this.options.keySeparator
-    let namespaces = options.ns || this.options.defaultNS
-    if (nsSeparator && key.indexOf(nsSeparator) > -1 && keySeparator) {
+    const wouldCheckForNsInKey = nsSeparator && key.indexOf(nsSeparator) > -1 && keySeparator
+    const seemsNaturalLanguage = !looksLikeObjectPath(key)
+    if (wouldCheckForNsInKey && seemsNaturalLanguage) {
+      this.logger.log(`skip to extract namespace:key from passed key "${key}, but key seems more like natural language`)
+    }
+    if (wouldCheckForNsInKey && !seemsNaturalLanguage) {
       const parts = key.split(nsSeparator)
       if (nsSeparator !== keySeparator || (nsSeparator === keySeparator && this.options.ns && this.options.ns.indexOf(parts[0]) > -1)) {
         namespaces = parts.shift()
