@@ -194,6 +194,11 @@ const getI18nextFormat = (i18n) => {
         // fallback value
         if (!this.isValidLookup(res) && options.defaultValue !== undefined) {
           usedDefault = true
+          if (options[i18n.options.pluralOptionProperty] !== undefined) {
+            let pluralKey = runSpecific.resolvePluralHooks(options[i18n.options.pluralOptionProperty], key, lng, options)
+            pluralKey = pluralKey.replace(key, 'defaultValue')
+            res = options[pluralKey]
+          }
           if (!res) res = options.defaultValue
         }
 
