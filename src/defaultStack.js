@@ -325,7 +325,9 @@ const stack = {
     'interpolate',
     'postProcess',
     'handleMissingKey',
-    'handleUpdateKey'
+    'handleUpdateKey',
+    'parseI18nFormat',
+    'addI18nFormatLookupKeys'
   ],
   register: (i18n) => {
     const languageUtils = new LanguageUtils(i18n.options)
