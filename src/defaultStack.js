@@ -194,8 +194,8 @@ const getI18nextFormat = (i18n) => {
     },
 
     handleMissing (res, resExactUsedKey, key, ns, lng, options = {}) {
-      if (res === undefined && lng !== undefined && ns !== undefined) {
-        i18n.logger.warn(`No value found for key "${resExactUsedKey}" in namespace "${ns}" for language "${lng}"!`)
+      if (lng !== undefined && ns !== undefined) {
+        if (res === undefined) i18n.logger.warn(`No value found for key "${resExactUsedKey}" in namespace "${ns}" for language "${lng}"!`)
 
         // string, empty or null
         let usedDefault = false
@@ -237,7 +237,7 @@ const getI18nextFormat = (i18n) => {
             lngs.push(lng)
           }
 
-          if (i18n.options.saveMissing) {
+          if (i18n.options.saveMissing || i18n.options.updateMissing) {
             if (!i18n.isNamespaceLoaded(ns)) {
               i18n.logger.warn(
                 `did not save key "${key}" as the namespace "${ns}" was not yet loaded`,
@@ -247,11 +247,12 @@ const getI18nextFormat = (i18n) => {
             }
             const send = async (l, k) => {
               if (updateMissing) {
-                await runSpecific.handleUpdateKey(k, ns, l, res, options)
+                i18n.emit('updateKey', l, ns, k, options.defaultValue || res)
+                await runSpecific.handleUpdateKey(k, ns, l, options.defaultValue || res, options)
               } else {
+                i18n.emit('missingKey', l, ns, k, options.defaultValue || res)
                 await runSpecific.handleMissingKey(k, ns, l, options.defaultValue || res, options)
               }
-              i18n.emit('missingKey', l, ns, k, res)
             }
 
             const needsPluralHandling = options[i18n.options.pluralOptionProperty] !== undefined && typeof options[i18n.options.pluralOptionProperty] !== 'string'

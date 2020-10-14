@@ -37,8 +37,19 @@ describe('Translator', () => {
 
     tests.forEach((test) => {
       it('correctly sends missing for ' + JSON.stringify(test.args) + ' args', () => {
+        const evts = []
+        i18n.on('missingKey', (lng, ns, key, value) => {
+          evts.push({ lng, ns, key, value })
+        })
         should(i18n.t.apply(i18n, test.args)).eql(test.expected)
 
+        should(evts).have.lengthOf(1)
+        should(evts[0].lng).eql(['en'])
+        should(evts[0].ns).eql('translation')
+        should(evts[0].key).eql(test.expected)
+        should(evts[0].value).eql(test.expected)
+
+        should(missingCalls).have.lengthOf(1)
         should(missingCalls[0].lng).eql(['en'])
         should(missingCalls[0].ns).eql('translation')
         should(missingCalls[0].key).eql(test.expected)
@@ -83,7 +94,13 @@ describe('Translator', () => {
 
     tests.forEach(test => {
       it('correctly sends missing for ' + JSON.stringify(test.args) + ' args', () => {
+        let missed = 0
+        i18n.on('missingKey', (lng, ns, key, value) => {
+          missed++
+        })
         i18n.t.apply(i18n, test.args)
+
+        should(missed).eql(doneTodos)
         should(test.expected).eql(doneTodos)
         doneTodos = 0
       })
