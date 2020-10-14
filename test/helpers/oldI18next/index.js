@@ -26,6 +26,34 @@ export default {
     i18n.addHook('initializing', (options) => {
       pr = new PluralResolver(i18n.logger, new LanguageUtils(options), options)
       inter = new Interpolator(i18n.logger, options)
+
+      // HACK!!!
+      i18n.extractFromKey = (key, options = {}) => {
+        let namespaces = options.ns || i18n.options.defaultNS
+        const nsSeparator = options.nsSeparator !== undefined ? options.nsSeparator : i18n.options.nsSeparator
+        const keySeparator = options.keySeparator !== undefined ? options.keySeparator : i18n.options.keySeparator
+        const wouldCheckForNsInKey = nsSeparator && key.indexOf(nsSeparator) > -1
+        const lng = options.lng || i18n.language
+        if (wouldCheckForNsInKey) {
+          const m = key.match(inter.nestingRegexp)
+          if (m && m.length > 0) {
+            if (typeof namespaces === 'string') namespaces = [namespaces]
+            return {
+              key,
+              namespaces,
+              ns: namespaces[namespaces.length - 1],
+              lng
+            }
+          }
+          const parts = key.split(nsSeparator)
+          if (nsSeparator !== keySeparator || (nsSeparator === keySeparator && i18n.options.ns && i18n.options.ns.indexOf(parts[0]) > -1)) {
+            namespaces = parts.shift()
+          }
+          key = parts.join(keySeparator || '')
+        }
+        if (typeof namespaces === 'string') namespaces = [namespaces]
+        return { key, namespaces, ns: namespaces[namespaces.length - 1], lng }
+      }
     })
     i18n.addHook('resolvePlural', (count, key, lng, options) => `${key}${i18n.options.pluralSeparator}${pr.getSuffix(lng, count)}`)
     i18n.addHook('formPlurals', (key, lng, options) => pr.getPluralFormsOfKey(lng, key))

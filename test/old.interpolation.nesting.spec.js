@@ -64,10 +64,10 @@ describe('i18next.interpolation.nesting', () => {
         args: ['$t(test1)', { a: 'foo' }],
         expected: 'test nest value foo'
       },
-      // {
-      //   args: ['$t(translation:test1)', { a: 'foo' }],
-      //   expected: 'test nest value foo'
-      // },
+      {
+        args: ['$t(translation:test1)', { a: 'foo' }],
+        expected: 'test nest value foo'
+      },
       {
         args: ['something $t(test1)', { a: 'foo' }],
         expected: 'something test nest value foo'
@@ -80,7 +80,7 @@ describe('i18next.interpolation.nesting', () => {
         args: ['keyB1'],
         expected: 'Text to interpolate => foo interpolated'
       },
-      // {
+      // { // we need too live with that possible loop
       //   args: ['keyB1rec'],
       //   expected: 'Text to interpolate => foo interpolated | '
       // },
