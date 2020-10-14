@@ -42,7 +42,6 @@ const getI18n = (opt) => {
     }
     return { status: 'ok', key: `${lngs[0]}-${nss[0]}` }
   })
-  i18n.addHook('')
   i18n.addHook('handleMissingKey', (key, ns, lng, value, options) => {
     created.push(`${lng.join('-')}-${ns}-${key}`)
   })

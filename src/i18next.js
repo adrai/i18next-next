@@ -14,6 +14,19 @@ class I18next extends EventEmitter {
     this.isInitialized = false
     const defOpt = getDefaults()
     this.loading = {}
+    this.hookNames = [
+      'extendOptions',
+      'initializing',
+      'loadResources',
+      'read',
+      'resolve',
+      'detectLanguage',
+      'cacheLanguage',
+      'bestMatchFromCodes',
+      'fallbackCodes',
+      'resolveHierarchy',
+      'translated'
+    ]
     this.hooks = {}
     this.options = { ...defOpt, ...options }
     if (options.interpolation) this.options = { ...this.options, interpolation: { ...defOpt.interpolation, ...options.interpolation } }
@@ -60,6 +73,11 @@ class I18next extends EventEmitter {
     if (module.type) throw new Error('You are probably passing an old module! Please check the object you are passing to i18next.use()')
     if (typeof module.register !== 'function') throw new Error('You are passing a wrong module! Please check the object you are passing to i18next.use()')
 
+    if (module.hooks && module.hooks.length > 0) {
+      module.hooks.forEach((h) => {
+        if (this.hookNames.indexOf(h) < 0) this.hookNames.push(h)
+      })
+    }
     module.register(this)
     return this
   }
@@ -69,7 +87,7 @@ class I18next extends EventEmitter {
       hook = type
       type = undefined
     }
-    // if (hookNames.indexOf(name) < 0) throw new Error(`${name} is not a valid hook!`)
+    if (!hook || typeof hook !== 'function') throw new Error(`${name ? `"${name}"` : 'This'} is not a valid hook!`)
     throwIf.alreadyInitializedFn(this)(`addHook(${name})`)
 
     if (type) {
@@ -87,6 +105,18 @@ class I18next extends EventEmitter {
 
     baseLogger.init(this._logger, this.options)
     this.logger = baseLogger
+
+    this.use(defaultStack)
+    if (!this.hooks.resolve || this.hooks.resolve.length === 0) {
+      this.addHook('resolve', (key, data, options) => {
+        const { ns, lng } = this.extractFromKey(typeof key === 'string' ? key : key[key.length - 1], options)
+        return deepFind((data && data[lng] && data[lng][ns]) || {}, key)
+      })
+    }
+
+    Object.keys(this.hooks).forEach((ah) => {
+      if (this.hookNames.indexOf(ah) < 0) throw new Error(`Hook ${ah} is not a valid hook name!`)
+    })
 
     const { sync: syncOptions, async: asyncOptions } = runAsyncLater(this.hooks.extendOptions, [{ ...this.options }])
     syncOptions.forEach((opt) => {
@@ -111,14 +141,6 @@ class I18next extends EventEmitter {
         throw new Error(msg)
       }
       await Promise.all(asyncInit)
-    }
-
-    this.use(defaultStack)
-    if (!this.hooks.resolve || this.hooks.resolve.length === 0) {
-      this.addHook('resolve', (key, data, options) => {
-        const { ns, lng } = this.extractFromKey(typeof key === 'string' ? key : key[key.length - 1], options)
-        return deepFind((data && data[lng] && data[lng][ns]) || {}, key)
-      })
     }
 
     this.language = this.options.lng
@@ -185,7 +207,7 @@ class I18next extends EventEmitter {
   }
 
   async load (toLoad, tried = 0, delay = 350) {
-    // throwIf.notInitializedFn(this)('load')
+    throwIf.notInitializedFn(this)('load', true)
     if (!this.hooks.read) return
 
     Object.keys(toLoad).forEach((lng) => {
@@ -245,7 +267,7 @@ class I18next extends EventEmitter {
   }
 
   async loadLanguages (lngs) {
-    // throwIf.notInitializedFn(this)('loadLanguages')
+    throwIf.notInitializedFn(this)('loadLanguages', true)
 
     if (typeof lngs === 'string') lngs = [lngs]
     const newLngs = lngs.filter((lng) => typeof lng === 'string' && this.options.preload.indexOf(lng) < 0)
@@ -274,7 +296,7 @@ class I18next extends EventEmitter {
   }
 
   async loadNamespaces (ns, lng) {
-    // throwIf.notInitializedFn(this)('loadNamespaces')
+    throwIf.notInitializedFn(this)('loadNamespaces', true)
     if (typeof ns === 'string') ns = [ns]
 
     if (lng && typeof lng !== 'string') lng = this.language
@@ -471,7 +493,7 @@ class I18next extends EventEmitter {
   }
 
   t (key, options = {}) {
-    // throwIf.notInitializedFn(this)('t')
+    throwIf.notInitializedFn(this)('t', true)
 
     if (this.options.overloadTranslationOptionHandler) {
       options = { ...options, ...this.options.overloadTranslationOptionHandler(arguments) }

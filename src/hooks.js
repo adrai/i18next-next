@@ -71,15 +71,6 @@ export function run (instance) {
       return [lng]
     },
 
-    interpolate (res, data, lng, options) {
-      if (!instance.hooks.interpolate) return res
-      for (const hook of instance.hooks.interpolate) {
-        const interpolated = hook(res, data, lng, options)
-        if (interpolated !== undefined && interpolated !== res) return interpolated
-      }
-      return res
-    },
-
     translated (res, keys, resolved, options = {}) {
       if (!instance.hooks.translated) return res
       for (const hook of instance.hooks.translated) {

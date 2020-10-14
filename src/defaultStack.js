@@ -72,6 +72,15 @@ const getI18nextFormat = (i18n) => {
         const resolvedValue = hook(key, ns, lng, data, options)
         if (resolvedValue !== undefined) return resolvedValue
       }
+    },
+
+    interpolate (res, data, lng, options) {
+      if (!i18n.hooks.interpolate) return res
+      for (const hook of i18n.hooks.interpolate) {
+        const interpolated = hook(res, data, lng, options)
+        if (interpolated !== undefined && interpolated !== res) return interpolated
+      }
+      return res
     }
   }
   return {
@@ -170,7 +179,7 @@ const getI18nextFormat = (i18n) => {
       if (res === newRes && !skipInterpolation) {
         let data = options.replace && typeof options.replace !== 'string' ? options.replace : options
         if (i18n.options.interpolation.defaultVariables) data = { ...i18n.options.interpolation.defaultVariables, ...data }
-        res = run.interpolate(res, data, options.lng || i18n.language, options)
+        res = runSpecific.interpolate(res, data, options.lng || i18n.language, options)
       } else {
         res = newRes
       }
@@ -307,6 +316,16 @@ const getI18nextFormat = (i18n) => {
 }
 
 const stack = {
+  hooks: [
+    'resolveKey',
+    'resolveContext',
+    'resolvePlural',
+    'formPlurals',
+    'interpolate',
+    'postProcess',
+    'handleMissingKey',
+    'handleUpdateKey'
+  ],
   register: (i18n) => {
     const languageUtils = new LanguageUtils(i18n.options)
     const interpolator = new Interpolator(i18n.options.interpolation)
