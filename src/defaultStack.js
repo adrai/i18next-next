@@ -316,6 +316,64 @@ const getI18nextFormat = (i18n) => {
   }
 }
 
+const entityMap = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;',
+  '/': '&#x2F;'
+}
+
+const escape = (data) => {
+  if (typeof data === 'string') {
+    // eslint-disable-next-line no-useless-escape
+    return data.replace(/[&<>"'\/]/g, s => entityMap[s])
+  }
+  return data
+}
+
+export function getDefaults () {
+  return {
+    pluralOptionProperty: 'count',
+    contextOptionProperty: 'context',
+    fallbackNS: false, // string or array of namespaces
+    supportedLngs: false, // array with supported languages
+    nonExplicitSupportedLngs: false,
+    load: 'all', // | currentOnly | languageOnly
+    pluralSeparator: '_',
+    contextSeparator: '_',
+    saveMissing: false, // enable to send missing values
+    updateMissing: false, // enable to update default values if different from translated value (only useful on initial development, or when keeping code as source of truth)
+    saveMissingTo: 'fallback', // 'current' || 'all'
+    saveMissingPlurals: true, // will save all forms not only singular key
+    returnNull: true, // allows null value as valid translation
+    returnEmptyString: true, // allows empty string value as valid translation
+    skipInterpolation: false,
+    interpolation: {
+      format: (value, format, lng, options) => value,
+      formatSeparator: ',',
+      escapeValue: true,
+      prefix: '{{',
+      suffix: '}}',
+      unescapePrefix: '-',
+      unescapeSuffix: '',
+      defaultVariables: {},
+      escape,
+      maxReplaces: 1000, // max replaces to prevent endless loop
+      missingInterpolationHandler: false // function(str, match)
+    }
+  }
+}
+
+export function extendOptions (opt) {
+  const defaultOptions = getDefaults()
+  let options = { ...defaultOptions, ...opt }
+  if (opt.interpolation) options = { ...options, interpolation: { ...defaultOptions.interpolation, ...opt.interpolation } }
+  if (opt.interpolation && opt.interpolation.defaultVariables) options.interpolation.defaultVariables = opt.interpolation.defaultVariables
+  return options
+}
+
 const stack = {
   hooks: [
     'resolveKey',
@@ -330,10 +388,15 @@ const stack = {
     'addI18nFormatLookupKeys'
   ],
   register: (i18n) => {
-    const languageUtils = new LanguageUtils(i18n.options)
-    const interpolator = new Interpolator(i18n.options.interpolation)
+    let languageUtils
+    let interpolator
 
     const i18nextFormat = getI18nextFormat(i18n)
+    i18n.addHook('extendOptions', (opt) => extendOptions(opt))
+    i18n.addHook('initializing', (options) => {
+      languageUtils = new LanguageUtils(options)
+      interpolator = new Interpolator(options.interpolation)
+    })
 
     i18n.addHook('resolve', (key, data, options) => i18nextFormat.resolve(key, data, options))
     i18n.addHook('resolveKey', (key, ns, lng, data, options) => deepFind((data && data[lng] && data[lng][ns]) || {}, key, options && options.keySeparator !== undefined ? options.keySeparator : i18n.options.keySeparator))

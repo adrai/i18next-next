@@ -1,20 +1,3 @@
-const entityMap = {
-  '&': '&amp;',
-  '<': '&lt;',
-  '>': '&gt;',
-  '"': '&quot;',
-  "'": '&#39;',
-  '/': '&#x2F;'
-}
-
-const escape = (data) => {
-  if (typeof data === 'string') {
-    // eslint-disable-next-line no-useless-escape
-    return data.replace(/[&<>"'\/]/g, s => entityMap[s])
-  }
-  return data
-}
-
 export function getDefaults () {
   return {
     // core options
@@ -39,36 +22,7 @@ export function getDefaults () {
         })
       }
       return ret
-    },
-
-    // additional defaultStack options
-    pluralOptionProperty: 'count',
-    contextOptionProperty: 'context',
-    fallbackNS: false, // string or array of namespaces
-    supportedLngs: false, // array with supported languages
-    nonExplicitSupportedLngs: false,
-    load: 'all', // | currentOnly | languageOnly
-    pluralSeparator: '_',
-    contextSeparator: '_',
-    saveMissing: false, // enable to send missing values
-    updateMissing: false, // enable to update default values if different from translated value (only useful on initial development, or when keeping code as source of truth)
-    saveMissingTo: 'fallback', // 'current' || 'all'
-    saveMissingPlurals: true, // will save all forms not only singular key
-    returnNull: true, // allows null value as valid translation
-    returnEmptyString: true, // allows empty string value as valid translation
-    skipInterpolation: false,
-    interpolation: {
-      format: (value, format, lng, options) => value,
-      formatSeparator: ',',
-      escapeValue: true,
-      prefix: '{{',
-      suffix: '}}',
-      unescapePrefix: '-',
-      unescapeSuffix: '',
-      defaultVariables: {},
-      escape,
-      maxReplaces: 1000, // max replaces to prevent endless loop
-      missingInterpolationHandler: false // function(str, match)
     }
+    // additional default options can be added via addHook('extendOptions'), like in default stack
   }
 }

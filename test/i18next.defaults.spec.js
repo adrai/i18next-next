@@ -1,6 +1,7 @@
 import { getDefaults } from '../src/defaults.js'
+import { extendOptions } from '../src/defaultStack.js'
 import should from 'should'
-const defaults = getDefaults()
+const defaults = extendOptions(getDefaults())
 
 describe('defaults', () => {
   it('it should have default shortcut', () => {

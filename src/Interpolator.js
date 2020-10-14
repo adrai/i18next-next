@@ -1,6 +1,5 @@
 import baseLogger from './logger.js'
 import { deepFind } from './utils.js'
-import { getDefaults } from './defaults.js'
 
 // eslint-disable-next-line no-useless-escape
 const regexEscape = (str) => str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&')
@@ -8,7 +7,7 @@ const regexEscape = (str) => str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, 
 class Interpolator {
   constructor (options = {}) {
     this.logger = baseLogger.create('interpolator')
-    this.options = { ...getDefaults().interpolation, ...options }
+    this.options = options
     if (options.defaultVariables) this.options.defaultVariables = options.defaultVariables
     this.escapeValue = this.options.escapeValue
     this.format = (this.options.format) || (value => value)

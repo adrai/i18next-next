@@ -1,7 +1,7 @@
 import baseLogger from './logger.js'
 import { getDefaults } from './defaults.js'
 import { run, runAsyncLater } from './hooks.js'
-import { isIE10, wait, deepFind, looksLikeObjectPath } from './utils.js'
+import { isIE10, wait, deepFind, looksLikeObjectPath, deepExtend } from './utils.js'
 import EventEmitter from './EventEmitter.js'
 import ResourceStore from './ResourceStore.js'
 import throwIf from './throwIf.js'
@@ -29,9 +29,6 @@ class I18next extends EventEmitter {
     ]
     this.hooks = {}
     this.options = { ...defOpt, ...options }
-    // the interpolation option is only used in default stack, but we do this here for the correct option overloading
-    if (options.interpolation) this.options = { ...this.options, interpolation: { ...defOpt.interpolation, ...options.interpolation } }
-    if (options.interpolation && options.interpolation.defaultVariables) this.options.interpolation.defaultVariables = options.interpolation.defaultVariables
     this.language = this.options.lng
     if (this.language) this.languages = [this.language]
     if (!this.language && this.options.fallbackLng) this.languages = [this.options.fallbackLng]
@@ -121,7 +118,7 @@ class I18next extends EventEmitter {
 
     const { sync: syncOptions, async: asyncOptions } = runAsyncLater(this.hooks.extendOptions, [{ ...this.options }])
     syncOptions.forEach((opt) => {
-      this.options = { ...opt, ...this.options }
+      this.options = deepExtend(opt, this.options)
     })
     if (asyncOptions.length > 0) {
       if (this.options.initImmediate === false) {
@@ -130,7 +127,7 @@ class I18next extends EventEmitter {
         throw new Error(msg)
       }
       (await Promise.all(asyncOptions)).forEach((opt) => {
-        this.options = { ...opt, ...this.options }
+        this.options = deepExtend(opt, this.options)
       })
     }
 

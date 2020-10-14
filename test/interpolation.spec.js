@@ -1,3 +1,4 @@
+import { extendOptions } from '../src/defaultStack.js'
 import Interpolator from '../src/Interpolator.js'
 import should from 'should'
 
@@ -6,7 +7,7 @@ describe('Interpolator', () => {
     let ip
 
     before(() => {
-      ip = new Interpolator({ escapeValue: false })
+      ip = new Interpolator(extendOptions({ interpolation: { escapeValue: false } }).interpolation)
     })
 
     const tests = [
@@ -34,10 +35,12 @@ describe('Interpolator', () => {
     let ip
 
     before(() => {
-      ip = new Interpolator({
-        escapeValue: false,
-        defaultVariables: { test: '123', bit: { more: '456' } }
-      })
+      ip = new Interpolator(extendOptions({
+        interpolation: {
+          escapeValue: false,
+          defaultVariables: { test: '123', bit: { more: '456' } }
+        }
+      }).interpolation)
     })
 
     const tests = [
@@ -95,7 +98,9 @@ describe('Interpolator', () => {
         let ip
 
         before(() => {
-          ip = new Interpolator(test.options)
+          ip = new Interpolator(extendOptions({
+            interpolation: test.options
+          }).interpolation)
         })
 
         Object.keys(test.expected).forEach(key => {
@@ -111,15 +116,17 @@ describe('Interpolator', () => {
     let ip
 
     before(() => {
-      ip = new Interpolator({
-        escapeValue: false,
-        format: function (value, format, lng) {
-          if (format === 'uppercase') return value.toUpperCase()
-          if (format === 'lowercase') return value.toLowerCase()
-          if (format === 'throw') throw new Error('Formatter error')
-          return value
+      ip = new Interpolator(extendOptions({
+        interpolation: {
+          escapeValue: false,
+          format: function (value, format, lng) {
+            if (format === 'uppercase') return value.toUpperCase()
+            if (format === 'lowercase') return value.toLowerCase()
+            if (format === 'throw') throw new Error('Formatter error')
+            return value
+          }
         }
-      })
+      }).interpolation)
     })
 
     const tests = [
@@ -149,13 +156,15 @@ describe('Interpolator', () => {
     let ip
 
     before(() => {
-      ip = new Interpolator({
-        formatSeparator: '|',
-        format: function (value, format, lng) {
-          if (format === 'uppercase') return value.toUpperCase()
-          return value
+      ip = new Interpolator(extendOptions({
+        interpolation: {
+          formatSeparator: '|',
+          format: function (value, format, lng) {
+            if (format === 'uppercase') return value.toUpperCase()
+            return value
+          }
         }
-      })
+      }).interpolation)
     })
 
     const tests = [{ args: ['test {{test | uppercase}}', { test: 'up' }], expected: 'test UP' }]
@@ -171,13 +180,15 @@ describe('Interpolator', () => {
     let ip
 
     before(() => {
-      ip = new Interpolator({
-        alwaysFormat: true,
-        format: function (value, format, lng) {
-          if (format === 'uppercase') return value.toUpperCase()
-          return value.toLowerCase()
+      ip = new Interpolator(extendOptions({
+        interpolation: {
+          alwaysFormat: true,
+          format: function (value, format, lng) {
+            if (format === 'uppercase') return value.toUpperCase()
+            return value.toLowerCase()
+          }
         }
-      })
+      }).interpolation)
     })
 
     const tests = [
@@ -196,7 +207,7 @@ describe('Interpolator', () => {
     let ip
 
     before(() => {
-      ip = new Interpolator()
+      ip = new Interpolator(extendOptions({}).interpolation)
     })
 
     const tests = [
@@ -240,7 +251,11 @@ describe('Interpolator', () => {
     let ip
 
     before(() => {
-      ip = new Interpolator({ unescapeSuffix: '+' })
+      ip = new Interpolator(extendOptions({
+        interpolation: {
+          unescapeSuffix: '+'
+        }
+      }).interpolation)
     })
 
     const tests = [
@@ -261,9 +276,11 @@ describe('Interpolator', () => {
     let ip
 
     before(() => {
-      ip = new Interpolator({
-        maxReplaces: 10
-      })
+      ip = new Interpolator(extendOptions({
+        interpolation: {
+          maxReplaces: 10
+        }
+      }).interpolation)
     })
 
     const tests = [
@@ -285,13 +302,15 @@ describe('Interpolator', () => {
     const tests = [{ args: ['{{test}}'], expected: '' }]
 
     before(() => {
-      ip = new Interpolator({
-        missingInterpolationHandler: (str, match) => {
-          should(str).eql('{{test}}')
-          should(match[0]).eql('{{test}}')
-          should(match[1]).eql('test')
+      ip = new Interpolator(extendOptions({
+        interpolation: {
+          missingInterpolationHandler: (str, match) => {
+            should(str).eql('{{test}}')
+            should(match[0]).eql('{{test}}')
+            should(match[1]).eql('test')
+          }
         }
-      })
+      }).interpolation)
     })
 
     tests.forEach((test) => {
@@ -309,14 +328,16 @@ describe('Interpolator', () => {
     const tests = [{ args: ['{{test}}'], expected: 'test' }]
 
     before(() => {
-      ip = new Interpolator({
-        missingInterpolationHandler: (str, match) => {
-          should(str).eql('{{test}}')
-          should(match[0]).eql('{{test}}')
-          should(match[1]).eql('test')
-          return 'test'
+      ip = new Interpolator(extendOptions({
+        interpolation: {
+          missingInterpolationHandler: (str, match) => {
+            should(str).eql('{{test}}')
+            should(match[0]).eql('{{test}}')
+            should(match[1]).eql('test')
+            return 'test'
+          }
         }
-      })
+      }).interpolation)
     })
 
     tests.forEach((test) => {
@@ -342,11 +363,13 @@ describe('Interpolator', () => {
     const tests = [{ args: ['{{test}}', { test: null }], expected: '' }]
 
     before(() => {
-      ip = new Interpolator({
-        missingInterpolationHandler: (str, match) => {
-          return 'test'
+      ip = new Interpolator(extendOptions({
+        interpolation: {
+          missingInterpolationHandler: (str, match) => {
+            return 'test'
+          }
         }
-      })
+      }).interpolation)
     })
 
     tests.forEach((test) => {
