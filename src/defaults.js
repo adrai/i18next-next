@@ -17,29 +17,16 @@ const escape = (data) => {
 
 export function getDefaults () {
   return {
+    // core options
     debug: false,
     initImmediate: true,
-    pluralOptionProperty: 'count',
-    contextOptionProperty: 'context',
     ns: ['translation'],
     defaultNS: 'translation',
-    fallbackNS: false, // string or array of namespaces
     fallbackLng: ['dev'],
-    supportedLngs: false, // array with supported languages
-    nonExplicitSupportedLngs: false,
-    load: 'all', // | currentOnly | languageOnly
     preload: [], // array with preload languages
     keySeparator: '.',
     nsSeparator: ':',
-    pluralSeparator: '_',
-    contextSeparator: '_',
-    saveMissing: false, // enable to send missing values
-    updateMissing: false, // enable to update default values if different from translated value (only useful on initial development, or when keeping code as source of truth)
-    saveMissingTo: 'fallback', // 'current' || 'all'
-    saveMissingPlurals: true, // will save all forms not only singular key
     appendNamespaceToCIMode: false,
-    returnNull: true, // allows null value as valid translation
-    returnEmptyString: true, // allows empty string value as valid translation
     overloadTranslationOptionHandler: (args) => {
       let ret = {}
       if (typeof args[1] === 'object') ret = args[1]
@@ -53,6 +40,22 @@ export function getDefaults () {
       }
       return ret
     },
+
+    // additional defaultStack options
+    pluralOptionProperty: 'count',
+    contextOptionProperty: 'context',
+    fallbackNS: false, // string or array of namespaces
+    supportedLngs: false, // array with supported languages
+    nonExplicitSupportedLngs: false,
+    load: 'all', // | currentOnly | languageOnly
+    pluralSeparator: '_',
+    contextSeparator: '_',
+    saveMissing: false, // enable to send missing values
+    updateMissing: false, // enable to update default values if different from translated value (only useful on initial development, or when keeping code as source of truth)
+    saveMissingTo: 'fallback', // 'current' || 'all'
+    saveMissingPlurals: true, // will save all forms not only singular key
+    returnNull: true, // allows null value as valid translation
+    returnEmptyString: true, // allows empty string value as valid translation
     skipInterpolation: false,
     interpolation: {
       format: (value, format, lng, options) => value,

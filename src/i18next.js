@@ -29,6 +29,7 @@ class I18next extends EventEmitter {
     ]
     this.hooks = {}
     this.options = { ...defOpt, ...options }
+    // the interpolation option is only used in default stack, but we do this here for the correct option overloading
     if (options.interpolation) this.options = { ...this.options, interpolation: { ...defOpt.interpolation, ...options.interpolation } }
     if (options.interpolation && options.interpolation.defaultVariables) this.options.interpolation.defaultVariables = options.interpolation.defaultVariables
     this.language = this.options.lng
