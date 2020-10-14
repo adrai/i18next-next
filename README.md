@@ -46,7 +46,8 @@ i18n.t('my.key') // a value
 - automatic detection when using natural language keys
 - automatic detection when returning objects
 - more customizable
-- separate compatibility layer for plugins
 - interpolation: automatic escaping of regex prefixes/suffixes
 - interpolation: no nesting anymore
 - Intl plural rules (cardinal and ordinal)
+- separate compatibility layer for plugins
+- separate compatibility layer for old i18next behaviour (plurals and nesting)

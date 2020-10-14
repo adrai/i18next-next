@@ -74,10 +74,10 @@ const getI18nextFormat = (i18n) => {
       }
     },
 
-    interpolate (res, data, lng, options) {
+    interpolate (key, res, data, lng, options) {
       if (!i18n.hooks.interpolate) return res
       for (const hook of i18n.hooks.interpolate) {
-        const interpolated = hook(res, data, lng, options)
+        const interpolated = hook(key, res, data, lng, options)
         if (interpolated !== undefined && interpolated !== res) return interpolated
       }
       return res
@@ -179,14 +179,14 @@ const getI18nextFormat = (i18n) => {
       if (res === newRes && !skipInterpolation) {
         let data = options.replace && typeof options.replace !== 'string' ? options.replace : options
         if (i18n.options.interpolation.defaultVariables) data = { ...i18n.options.interpolation.defaultVariables, ...data }
-        res = runSpecific.interpolate(res, data, options.lng || i18n.language, options)
+        res = runSpecific.interpolate(key, res, data, options.lng || i18n.language, options)
       } else {
         res = newRes
       }
 
       const postProcess = options.postProcess || i18n.options.postProcess
       const postProcessorNames = typeof postProcess === 'string' ? [postProcess] : postProcess
-      if (res !== undefined && postProcessorNames && postProcessorNames.length) {
+      if (res !== undefined && postProcessorNames && postProcessorNames.length && options.applyPostProcessor !== false) {
         res = runSpecific.postProcess(postProcessorNames, res, key, options)
       }
 
@@ -309,7 +309,7 @@ const getI18nextFormat = (i18n) => {
       res = this.handleMissing(res, resExactUsedKey, key, ns, lng, options)
 
       // extend
-      if (options.applyPostProcessor) res = this.extendTranslation(res, keys, resolved, options)
+      res = this.extendTranslation(res, keys, resolved, options)
 
       return res
     }
@@ -412,7 +412,7 @@ const stack = {
       const pr = new Intl.PluralRules(lng, { type: options.ordinal ? 'ordinal' : 'cardinal' })
       return pr.resolvedOptions().pluralCategories.map((form) => `${key}${i18n.options.pluralSeparator}${form}`)
     })
-    i18n.addHook('interpolate', (value, data, lng, options) => interpolator.interpolate(value, data, lng, options))
+    i18n.addHook('interpolate', (key, value, data, lng, options) => interpolator.interpolate(value, data, lng, options))
   }
 }
 
