@@ -49,4 +49,4 @@ i18n.t('my.key') // a value
 - separate compatibility layer for plugins
 - interpolation: automatic escaping of regex prefixes/suffixes
 - interpolation: no nesting anymore
-- Intl plural rules
+- Intl plural rules (cardinal and ordinal)
