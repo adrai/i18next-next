@@ -42,11 +42,11 @@ i18n.t('my.key') // a value
 
 ## Some differences:
 
-- Intl plural rules
 - handles nested and flat resources automatically
-- interpolation no nesting
-- interpolation automatic escaping of regex prefixes/suffixes
 - automatic detection when using natural language keys
 - automatic detection when returning objects
 - more customizable
-- separate compatability layer for plugins
+- separate compatibility layer for plugins
+- interpolation: automatic escaping of regex prefixes/suffixes
+- interpolation: no nesting anymore
+- Intl plural rules
