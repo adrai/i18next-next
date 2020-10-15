@@ -45,10 +45,7 @@ export default [
     // external: [
     //   ...Object.keys(pkg.dependencies || {})
     // ],
-    plugins: [babel(getBabelOptions({
-      useESModules: false, // setting this to true, prevents the module to be imported via esm in node.js environment
-      plugins: [['transform-runtime-file-extensions']]
-    }))]
+    plugins: [babel(getBabelOptions({ useESModules: true }))]
   },
   // this is not used, if we make sure every js file is imported with .js ending
   // {
