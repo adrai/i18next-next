@@ -18,6 +18,9 @@
     },
     "./esm": {
       "default": "./dist/esm/index.js"
+    },
+    "./src": {
+      "default": "./dist/src/index.js"
     }
   },
   "scripts": {
