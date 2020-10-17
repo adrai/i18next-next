@@ -1,8 +1,5 @@
-// @ts-ignore
 import { assertEquals } from 'https://deno.land/std/testing/asserts.ts'
-// @ts-ignore
 import i18next from '../../index.js'
-// @ts-ignore
 const { test } = Deno
 
 test('onExtendOptions', async () => {

@@ -20,12 +20,12 @@
       "default": "./dist/esm/index.js"
     },
     "./src": {
-      "default": "./dist/src/index.js"
+      "default": "./src/index.js"
     }
   },
   "scripts": {
     "lint:javascript": "eslint .",
-    "lint:typescript": "eslint -c types/.eslintrc types/**/*.d.ts test/types/**/*.test-d.ts",
+    "lint:typescript": "eslint -c .ts.eslintrc *.d.ts test/types/**/*.test-d.ts",
     "lint": "npm run lint:javascript && npm run lint:typescript",
     "build": "rm -rf dist && rollup -c && echo '{\"type\":\"commonjs\"}' > dist/cjs/package.json",
     "test:deno": "deno test test/deno/*.ts --reload",
