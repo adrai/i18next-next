@@ -311,6 +311,16 @@ const getI18nextFormat = (i18n) => {
       // extend
       res = this.extendTranslation(res, keys, resolved, options)
 
+      // append namespace if still key
+      if (res === key && i18n.options.appendNamespaceToMissingKey) {
+        res = `${ns}:${key}`
+      }
+
+      // parseMissingKeyHandler
+      if (i18n.options.parseMissingKeyHandler) {
+        res = i18n.options.parseMissingKeyHandler(res)
+      }
+
       return res
     }
   }
