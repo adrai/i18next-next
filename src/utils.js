@@ -43,7 +43,7 @@ export function deepFind (obj, path, keySeparator = '.') {
 
 export function deepExtend (target, source, overwrite) {
   for (const prop in source) {
-    if (prop !== '__proto__') {
+    if (prop !== '__proto__' && prop !== 'constructor') {
       if (prop in target) {
         // If we reached a leaf string in target or source then replace with source or skip depending on the 'overwrite' switch
         if (

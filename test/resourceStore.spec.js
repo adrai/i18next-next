@@ -144,10 +144,16 @@ describe('ResourceStore', () => {
         })
       })
 
-      it('without polluting the prototype', () => {
+      it('without polluting the prototype by __proto__', () => {
         const malicious = '{"__proto__":{"vulnerable":"Polluted"}}'
         rs.addResourceBundle('en', 'translation', JSON.parse(malicious), true, true)
         should({}.vulnerable).eql(undefined)
+      })
+
+      it('without polluting the prototype by constructor', () => {
+        const malicious = '{"constructor": {"prototype": {"polluted": "yes"}}}'
+        rs.addResourceBundle('en', 'translation', JSON.parse(malicious), true)
+        should({}.polluted).eql(undefined)
       })
     })
 
