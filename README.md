@@ -42,6 +42,7 @@ i18n.t('my.key') // a value
 
 ## Some differences:
 
+- not a singleton anymore
 - handles nested and flat resources automatically
 - automatic detection when using natural language keys
 - automatic detection when returning objects
