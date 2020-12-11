@@ -146,9 +146,7 @@ class I18next extends EventEmitter {
     const hasLanguageDetection = this.hooks.detectLanguage && this.hooks.detectLanguage.length > 0
     if (this.options.fallbackLng && !this.language && !hasLanguageDetection) {
       const codes = this.getFallbackCodes(this.options.fallbackLng)
-      if (codes.length > 0 && codes[0] !== 'dev') {
-        this.language = codes[0]
-      }
+      if (codes.length > 0 && codes[0] !== 'dev') this.language = codes[0]
     }
 
     const { sync: syncRes, async: asyncRes } = runAsyncLater(this.hooks.loadResources, [this.options])
