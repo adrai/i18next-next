@@ -143,6 +143,13 @@ class I18next extends EventEmitter {
 
     this.language = this.options.lng
     if (!this.language && this.options.fallbackLng) this.languages = [this.options.fallbackLng]
+    const hasLanguageDetection = this.hooks.detectLanguage && this.hooks.detectLanguage.length > 0
+    if (this.options.fallbackLng && !this.language && !hasLanguageDetection) {
+      const codes = this.getFallbackCodes(this.options.fallbackLng)
+      if (codes.length > 0 && codes[0] !== 'dev') {
+        this.language = codes[0]
+      }
+    }
 
     const { sync: syncRes, async: asyncRes } = runAsyncLater(this.hooks.loadResources, [this.options])
     let resources = syncRes.reduce((prev, curr) => ({ ...prev, ...curr }), {})
@@ -192,7 +199,6 @@ class I18next extends EventEmitter {
       }
     }
 
-    const hasLanguageDetection = this.hooks.detectLanguage && this.hooks.detectLanguage.length > 0
     if (!this.language && !hasLanguageDetection) this.logger.warn('init: no lng is defined and no languageDetector is used')
     const hasLanguageCaching = this.hooks.cacheLanguage && this.hooks.cacheLanguage.length > 0
     if (this.options.initImmediate === false || (!hasLanguageDetection && !hasLanguageCaching)) this.changeLanguage(this.language)
