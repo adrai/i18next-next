@@ -577,5 +577,13 @@ class I18next extends EventEmitter {
 }
 
 export default function (options) {
-  return new I18next(options)
+  const inst = new I18next(options)
+  // bind own functions to correct this, in this way you can for example just use t() instead of i18n.t()
+  const mems = Object.getOwnPropertyNames(Object.getPrototypeOf(inst))
+  mems.forEach((mem) => {
+    if (typeof inst[mem] === 'function') {
+      inst[mem] = inst[mem].bind(inst)
+    }
+  })
+  return inst
 }

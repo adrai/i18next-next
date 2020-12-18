@@ -587,4 +587,21 @@ describe('i18next', () => {
     const translated = i18nextInstance.t('key', { text: 'can you hear me' })
     should(translated).eql('CAN YOU HEAR ME just uppercased')
   })
+
+  it('bind always to correct this', async () => {
+    const i18nextInstance = i18next({ fallbackLng: 'en' })
+    i18nextInstance.addHook('loadResources', () => ({
+      en: {
+        translation: {
+          key: 'some value'
+        }
+      }
+    }))
+    await i18nextInstance.init()
+    const t = i18nextInstance.t
+    let translated = i18nextInstance.t('key')
+    should(translated).eql('some value')
+    translated = t('key')
+    should(translated).eql('some value')
+  })
 })
