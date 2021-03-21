@@ -40,7 +40,17 @@ describe('utils', () => {
     it('should get nested and flat values', () => {
       const obj = {
         a: {
-          nested: 'a nested value'
+          nested: 'a nested value',
+          'more.of': {
+            nested: {
+              here: {
+                wow: 'cool'
+              },
+              'and.even.more': {
+                gaga: 'strange'
+              }
+            }
+          }
         },
         'a.flat': 'a flat value',
         'b.flat': {
@@ -73,6 +83,10 @@ describe('utils', () => {
       should(df2).eql('deep flat')
       const v = deepFind(obj, 'b.flat.more2.deeper.key')
       should(v).eql('very deep')
+      const co = deepFind(obj, 'a.more.of.nested.here.wow')
+      should(co).eql('cool')
+      const gaga = deepFind(obj, 'a.more.of.nested.and.even.more.gaga')
+      should(gaga).eql('strange')
       const fls = deepFind(obj, 'a.wrong')
       should(fls).eql(undefined)
       const fls2 = deepFind(obj, 'str.wrong')
