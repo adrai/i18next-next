@@ -1,4 +1,5 @@
 import i18next from '../index.js'
+import { getDefaults } from '../src/defaults.js'
 import should from 'should'
 
 describe('i18next', () => {
@@ -128,6 +129,46 @@ describe('i18next', () => {
           should(i18n.getResourceBundle('en', 'translation')).eql(undefined)
         })
       })
+    })
+  })
+
+  describe('#JSON.stringify', () => {
+    let newInstance
+    before(() => {
+      newInstance = i18next({ some: 'options' })
+    })
+
+    it('it should JSON.stringify non-initialized without errors', () => {
+      should(JSON.stringify(newInstance)).eql(
+        JSON.stringify({
+          options: { ...getDefaults(), some: 'options' },
+          store: {},
+          languages: [ 'dev' ]
+        })
+      )
+    })
+
+    it('it should JSON.stringify initialized without errors', async () => {
+      await newInstance.init()
+
+      newInstance.addResourceBundle('en', 'translation', { key: 'value' })
+      await newInstance.changeLanguage('en')
+
+      should(JSON.stringify(newInstance)).containEql(JSON.stringify({
+        store: {
+          en: {
+            translation: {
+              key: 'value'
+            }
+          }
+        },
+        language: 'en',
+        languages: ['en', 'dev']
+      }).substring(1))
+
+      should(JSON.stringify(newInstance)).containEql(JSON.stringify({
+        some: 'options'
+      }).substring(1))
     })
   })
 })

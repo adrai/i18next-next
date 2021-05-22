@@ -31,7 +31,7 @@ class I18next extends EventEmitter {
     this.options = { ...defOpt, ...options }
     this.language = this.options.lng
     if (this.language) this.languages = [this.language]
-    if (!this.language && this.options.fallbackLng) this.languages = [this.options.fallbackLng]
+    if (!this.language && this.options.fallbackLng) this.languages = Array.isArray(this.options.fallbackLng) ? [...this.options.fallbackLng] : [this.options.fallbackLng]
     this.store = new ResourceStore({}, this.options)
 
     // append api
@@ -572,6 +572,15 @@ class I18next extends EventEmitter {
       return clone
     } else {
       return clone.init()
+    }
+  }
+
+  toJSON () {
+    return {
+      options: this.options,
+      store: this.store,
+      language: this.language,
+      languages: this.languages
     }
   }
 }
