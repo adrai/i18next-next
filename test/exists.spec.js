@@ -42,5 +42,12 @@ describe('Translator', () => {
         should(i18n.exists.apply(i18n, test.args)).eql(test.expected)
       })
     })
+
+    const nullishArgs = ['', undefined, null]
+    nullishArgs.forEach(nullishArg => {
+      it(`should return false if a "${nullishArg}" key is passed as an argument`, () => {
+        should(i18n.exists(nullishArg)).eql(false)
+      })
+    })
   })
 })

@@ -491,6 +491,7 @@ class I18next extends EventEmitter {
   }
 
   exists (key, options = {}) {
+    if (key === undefined || key === null) return false
     return !!run(this).resolve(key, options)
   }
 
