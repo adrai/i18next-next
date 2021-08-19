@@ -85,8 +85,9 @@ class LanguageUtils {
         const lngOnly = this.getLanguagePartFromCode(code)
         if (this.isSupportedCode(lngOnly)) return (found = lngOnly)
 
-        found = this.options.supportedLngs.find(supportedLng => {
+        found = this.options.supportedLngs.find((supportedLng) => {
           if (supportedLng.indexOf(lngOnly) === 0) return supportedLng
+          return undefined
         })
       })
     }

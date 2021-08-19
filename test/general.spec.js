@@ -455,7 +455,7 @@ describe('i18next', () => {
       }
     }))
     i18nextInstance.addHook('interpolate', (key, str, data, lng, options) => {
-      const regexp = new RegExp('_(.+?)_', 'g')
+      const regexp = /_(.+?)_/g
       let match, value
       while ((match = regexp.exec(str))) {
         value = match[1].trim()

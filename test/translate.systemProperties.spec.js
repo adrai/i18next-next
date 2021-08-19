@@ -34,7 +34,7 @@ describe('Translator', () => {
       await i18n.init()
     })
 
-    var tests = [
+    const tests = [
       { args: ['test', { lng: 'de', nsSeparator: '.' }], expected: 'test_de' },
       { args: ['test.length', { lng: 'de', nsSeparator: '.' }], expected: 'test_length' },
       { args: ['test.search', { lng: 'de', nsSeparator: '.' }], expected: 'test_search' }
