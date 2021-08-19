@@ -83,14 +83,18 @@ class Interpolator {
     const handleFormat = (key) => {
       if (key.indexOf(this.formatSeparator) < 0) {
         const path = utils.getPathWithDefaults(data, defaultData, key)
-        return this.alwaysFormat ? this.format(path, undefined, lng) : path
+        return this.alwaysFormat ? this.format(path, undefined, lng, { ...options, ...data, interpolationkey: key }) : path
       }
 
       const p = key.split(this.formatSeparator)
       const k = p.shift().trim()
       const f = p.join(this.formatSeparator).trim()
 
-      return this.format(utils.getPathWithDefaults(data, defaultData, k), f, lng, options)
+      return this.format(utils.getPathWithDefaults(data, defaultData, k), f, lng, {
+        ...options,
+        ...data,
+        interpolationkey: k
+      })
     }
 
     this.resetRegExp()
@@ -198,7 +202,7 @@ class Interpolator {
        *   - Not t(a, b, {"keyA": "valueA", "keyB": "valueB"})
        */
       let doReduce = false
-      if (match[0].includes(this.formatSeparator) && !/{.*}/.test(match[1])) {
+      if (match[0].indexOf(this.formatSeparator) !== -1 && !/{.*}/.test(match[1])) {
         const r = match[1].split(this.formatSeparator).map(elem => elem.trim())
         match[1] = r.shift()
         formatters = r
@@ -218,7 +222,10 @@ class Interpolator {
       }
 
       if (doReduce) {
-        value = formatters.reduce((v, f) => this.format(v, f, options.lng, options), value.trim())
+        value = formatters.reduce(
+          (v, f) => this.format(v, f, options.lng, { ...options, interpolationkey: match[1].trim() }),
+          value.trim()
+        )
       }
 
       // Nested keys should not be escaped by default #854
