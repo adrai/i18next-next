@@ -312,12 +312,13 @@ const getI18nextFormat = (i18n) => {
       res = this.extendTranslation(res, keys, resolved, options)
 
       // append namespace if still key
-      if (res === key && i18n.options.appendNamespaceToMissingKey) {
+      if (resUsedKey && res === key && i18n.options.appendNamespaceToMissingKey) {
         res = `${ns}:${key}`
       }
 
+      const usedDefault = !this.isValidLookup(res) && options.defaultValue !== undefined
       // parseMissingKeyHandler
-      if (i18n.options.parseMissingKeyHandler) {
+      if ((resUsedKey || usedDefault) && i18n.options.parseMissingKeyHandler) {
         res = i18n.options.parseMissingKeyHandler(res)
       }
 
