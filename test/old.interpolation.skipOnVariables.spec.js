@@ -1,0 +1,75 @@
+import i18next from '../index.js'
+import should from 'should'
+import oldI18next from './helpers/oldI18next/index.js'
+
+describe('i18next.interpolation.nesting', () => {
+  let i18n
+
+  before(async () => {
+    i18n = i18next({ lng: 'en', interpolation: { skipOnVariables: true } })
+    i18n.use(oldI18next)
+    i18n.addHook('loadResources', () => ({
+      en: {
+        translation: {
+          key: 'value {{a}}',
+          key2: 'value {{a}} {{b}}',
+          keyWithoutVar: 'value',
+          nested: 'nested stuff',
+          keyWithNest: '$t(nested2) value',
+          keyWithNestAndVar: '$t(nested2) value {{a}}',
+          nested2: 'HI'
+        }
+      }
+    }))
+    await i18n.init()
+  })
+
+  describe('nesting', () => {
+    const tests = [
+      {
+        args: ['keyWithoutVar'],
+        expected: 'value'
+      },
+      {
+        args: ['key', { a: 'hahaha' }],
+        expected: 'value hahaha'
+      },
+      {
+        args: ['keyWithNest'],
+        expected: 'HI value'
+      },
+      {
+        args: ['keyWithNestAndVar', { a: '$t(nested)' }],
+        expected: '$t(nested2) value $t(nested)'
+      },
+      {
+        args: ['key', { a: '{{nested}}' }],
+        expected: 'value {{nested}}'
+      },
+      {
+        args: ['key2', { a: '{{nested}}', b: 'something' }],
+        expected: 'value {{nested}} something'
+      },
+      {
+        args: [
+          '{{a}} {{w}} {{a}} {{other}}',
+          { a: '{{b}}', b: 'c', w: 'normal', other: 'whatever' }
+        ],
+        expected: '{{b}} normal {{b}} whatever'
+      },
+      {
+        args: [
+          '{{a}} {{w}} {{a}} {{other}}',
+          { a: '     {{b}}', b: 'c', w: 'normal', other: 'whatever' }
+        ],
+        expected: '     {{b}} normal      {{b}} whatever'
+      }
+    ]
+
+    tests.forEach((test) => {
+      it('correctly nests for ' + JSON.stringify(test.args) + ' args', () => {
+        should(i18n.t.apply(i18n, test.args)).eql(test.expected)
+      })
+    })
+  })
+})
