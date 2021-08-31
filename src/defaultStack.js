@@ -250,8 +250,9 @@ const getI18nextFormat = (i18n) => {
                 i18n.emit('updateKey', l, ns, k, options.defaultValue || res)
                 await runSpecific.handleUpdateKey(k, ns, l, options.defaultValue || res, options)
               } else {
-                i18n.emit('missingKey', l, ns, k, options.defaultValue || res)
-                await runSpecific.handleMissingKey(k, ns, l, options.defaultValue || res, options)
+                const missingKeyNoValueFallbackToKey = options.missingKeyNoValueFallbackToKey || i18n.options.missingKeyNoValueFallbackToKey
+                i18n.emit('missingKey', l, ns, k, options.defaultValue || (missingKeyNoValueFallbackToKey ? undefined : res))
+                await runSpecific.handleMissingKey(k, ns, l, options.defaultValue || (missingKeyNoValueFallbackToKey ? undefined : res), options)
               }
             }
 
