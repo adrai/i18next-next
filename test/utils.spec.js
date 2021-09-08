@@ -66,7 +66,10 @@ describe('utils', () => {
             }
           }
         },
-        str: 'whatever'
+        str: 'whatever',
+        arr: [
+          null
+        ]
       }
 
       const n = deepFind(obj, 'a.nested')
@@ -91,6 +94,14 @@ describe('utils', () => {
       should(fls).eql(undefined)
       const fls2 = deepFind(obj, 'str.wrong')
       should(fls2).eql(undefined)
+      const arr0 = deepFind(obj, 'arr.0')
+      should(arr0).eql(null)
+      const arr1 = deepFind(obj, 'arr.0.title')
+      should(arr1).eql(undefined)
+      const arr2 = deepFind(obj, 'arr.1')
+      should(arr2).eql(undefined)
+      const arr3 = deepFind(obj, 'arr.1.title')
+      should(arr3).eql(undefined)
     })
   })
 })
