@@ -163,12 +163,89 @@ describe('i18next', () => {
           }
         },
         language: 'en',
-        languages: ['en', 'dev']
+        languages: ['en', 'dev'],
+        resolvedLanguage: 'en'
       }).substring(1))
 
       should(JSON.stringify(newInstance)).containEql(JSON.stringify({
         some: 'options'
       }).substring(1))
+    })
+  })
+
+  describe('language properties', () => {
+    let newInstance
+    before(async () => {
+      newInstance = i18next({ fallbackLng: 'en' })
+      newInstance.addHook('loadResources', () => ({
+        en: {
+          translation: {
+            key: 'value in en'
+          }
+        },
+        de: {
+          translation: {
+            key: 'value in de'
+          }
+        },
+        fr: {
+          translation: {}
+        }
+      }))
+      await newInstance.init()
+    })
+
+    describe('after init', () => {
+      it('it should have the appropriate language properties', () => {
+        should(newInstance).have.property('language', 'en')
+        should(newInstance).have.property('languages')
+        should(newInstance.languages).have.lengthOf(1)
+        should(newInstance.languages[0]).equal('en')
+        should(newInstance).have.property('resolvedLanguage', 'en')
+      })
+    })
+
+    describe('after changeLanguage with a non available language', () => {
+      before(() => {
+        newInstance.changeLanguage('it')
+      })
+      it('it should have the appropriate language properties', () => {
+        should(newInstance).have.property('language', 'it')
+        should(newInstance).have.property('languages')
+        should(newInstance.languages).have.lengthOf(2)
+        should(newInstance.languages[0]).equal('it')
+        should(newInstance.languages[1]).equal('en')
+        should(newInstance).have.property('resolvedLanguage', 'en')
+      })
+    })
+
+    describe('after changeLanguage with a region specific language', () => {
+      before(() => {
+        newInstance.changeLanguage('de-CH')
+      })
+      it('it should have the appropriate language properties', () => {
+        should(newInstance).have.property('language', 'de-CH')
+        should(newInstance).have.property('languages')
+        should(newInstance.languages).have.lengthOf(3)
+        should(newInstance.languages[0]).equal('de-CH')
+        should(newInstance.languages[1]).equal('de')
+        should(newInstance.languages[2]).equal('en')
+        should(newInstance).have.property('resolvedLanguage', 'de')
+      })
+    })
+
+    describe('after changeLanguage with an empty loaded language', () => {
+      before(() => {
+        newInstance.changeLanguage('fr')
+      })
+      it('it should have the appropriate language properties', () => {
+        should(newInstance).have.property('language', 'fr')
+        should(newInstance).have.property('languages')
+        should(newInstance.languages).have.lengthOf(2)
+        should(newInstance.languages[0]).equal('fr')
+        should(newInstance.languages[1]).equal('en')
+        should(newInstance).have.property('resolvedLanguage', 'en')
+      })
     })
   })
 })

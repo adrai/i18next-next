@@ -7,6 +7,19 @@ import ResourceStore from './ResourceStore.js'
 import throwIf from './throwIf.js'
 import defaultStack from './defaultStack.js'
 
+function setResolvedLanguage (self, lng) {
+  self.resolvedLanguage = undefined
+  if (['cimode', 'dev'].indexOf(lng) > -1) return
+  for (let li = 0; li < self.languages.length; li++) {
+    const lngInLngs = self.languages[li]
+    if (['cimode', 'dev'].indexOf(lngInLngs) > -1) continue
+    if (self.store.hasLanguageSomeTranslations(lngInLngs)) {
+      self.resolvedLanguage = lngInLngs
+      break
+    }
+  }
+}
+
 class I18next extends EventEmitter {
   constructor (options = {}) {
     super()
@@ -28,6 +41,13 @@ class I18next extends EventEmitter {
       'translated'
     ]
     this.hooks = {}
+    if (!options.defaultNS && options.ns) {
+      if (typeof options.ns === 'string') {
+        options.defaultNS = options.ns
+      } else {
+        options.defaultNS = options.ns[0]
+      }
+    }
     this.options = { ...defOpt, ...options }
     this.language = this.options.lng
     if (this.language) this.languages = [this.language]
@@ -197,6 +217,8 @@ class I18next extends EventEmitter {
       }
     }
 
+    setResolvedLanguage(this, this.language)
+
     if (!this.language && !hasLanguageDetection) this.logger.warn('init: no lng is defined and no languageDetector is used')
     const hasLanguageCaching = this.hooks.cacheLanguage && this.hooks.cacheLanguage.length > 0
     if (this.options.initImmediate === false || (!hasLanguageDetection && !hasLanguageCaching)) this.changeLanguage(this.language)
@@ -351,7 +373,7 @@ class I18next extends EventEmitter {
   }
 
   dir (lng) {
-    if (!lng) lng = this.language
+    if (!lng) lng = this.resolvedLanguage || (this.languages && this.languages.length > 0 ? this.languages[0] : this.language)
     if (!lng) return 'rtl'
 
     const rtlLngs = [
@@ -459,6 +481,7 @@ class I18next extends EventEmitter {
     await this.loadLanguage(lng)
     this.language = lng
     this.languages = this.toResolveHierarchy(this.language)
+    setResolvedLanguage(this, lng)
     await this.cacheLanguage(this.language)
 
     this.emit('languageChanged', lng)
@@ -475,9 +498,6 @@ class I18next extends EventEmitter {
     const keySeparator = options.keySeparator !== undefined ? options.keySeparator : this.options.keySeparator
     const wouldCheckForNsInKey = nsSeparator && key.indexOf(nsSeparator) > -1
     const seemsNaturalLanguage = !looksLikeObjectPath(key, nsSeparator, keySeparator)
-    if (wouldCheckForNsInKey && seemsNaturalLanguage) {
-      this.logger.log(`skip to extract namespace:key from passed key "${key}, but key seems more like natural language`)
-    }
     if (wouldCheckForNsInKey && !seemsNaturalLanguage) {
       const parts = key.split(nsSeparator)
       if (nsSeparator !== keySeparator || (nsSeparator === keySeparator && this.options.ns && this.options.ns.indexOf(parts[0]) > -1)) {
@@ -581,7 +601,8 @@ class I18next extends EventEmitter {
       options: this.options,
       store: this.store,
       language: this.language,
-      languages: this.languages
+      languages: this.languages,
+      resolvedLanguage: this.resolvedLanguage
     }
   }
 }

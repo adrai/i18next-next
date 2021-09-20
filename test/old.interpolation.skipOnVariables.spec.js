@@ -39,6 +39,10 @@ describe('i18next.interpolation.nesting', () => {
         expected: 'HI value'
       },
       {
+        args: ['keyWithNestAndVar', { a: 'normal value' }],
+        expected: 'HI value normal value'
+      },
+      {
         args: ['keyWithNestAndVar', { a: '$t(nested)' }],
         expected: '$t(nested2) value $t(nested)'
       },

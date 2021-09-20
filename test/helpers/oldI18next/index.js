@@ -55,8 +55,8 @@ export default {
         return { key, namespaces, ns: namespaces[namespaces.length - 1], lng }
       }
     })
-    i18n.addHook('resolvePlural', (count, key, lng, options) => `${key}${i18n.options.pluralSeparator}${pr.getSuffix(lng, count)}`)
-    i18n.addHook('formPlurals', (key, lng, options) => pr.getPluralFormsOfKey(lng, key))
+    i18n.addHook('resolvePlural', (count, key, lng, options) => `${key}${i18n.options.pluralSeparator}${pr.getSuffix(lng, count, options)}`)
+    i18n.addHook('formPlurals', (key, lng, options) => pr.getPluralFormsOfKey(lng, key, options))
     i18n.addHook('interpolate', (key, value, data, lng, options) => {
       // i18next.parsing
       if (options.interpolation) {

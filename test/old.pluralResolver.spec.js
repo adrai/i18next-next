@@ -7,7 +7,7 @@ describe('Translator', () => {
     let i18n
 
     before(async () => {
-      i18n = i18next({ lng: 'en', fallbackLng: 'en' })
+      i18n = i18next({ lng: 'en', fallbackLng: 'en', compatibilityJSON: 'v3' })
       i18n.use(oldI18next)
       i18n.addHook('loadResources', () => ({
         en: {

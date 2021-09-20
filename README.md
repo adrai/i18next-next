@@ -50,5 +50,6 @@ i18n.t('my.key') // a value
 - interpolation: automatic escaping of regex prefixes/suffixes
 - interpolation: no nesting anymore
 - Intl plural rules (cardinal and ordinal)
+- offer resolvedLanguage to be used i.e. in a language switcher
 - separate compatibility layer for plugins
 - separate compatibility layer for old i18next behaviour (plurals and nesting)

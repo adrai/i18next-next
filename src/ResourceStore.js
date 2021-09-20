@@ -128,6 +128,12 @@ class ResourceStore extends EventEmitter {
     return this.data
   }
 
+  hasLanguageSomeTranslations (lng) {
+    const data = this.getDataByLanguage(lng)
+    const n = (data && this.seenNamespaces) || []
+    return !!n.find(v => data[v] && Object.keys(data[v]).length > 0)
+  }
+
   toJSON () {
     return this.data
   }
