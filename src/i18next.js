@@ -437,7 +437,8 @@ class I18next extends EventEmitter {
       'pes',
       'prs',
       'dv',
-      'sam'
+      'sam',
+      'ckb'
     ]
 
     return rtlLngs.find((l) => lng.toLowerCase().indexOf(l) > -1) >= 0
