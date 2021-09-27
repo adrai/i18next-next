@@ -10,7 +10,11 @@ describe('Translator', () => {
       i18n.addHook('loadResources', () => ({
         en: {
           translation: {
-            'test: with a sentence. or more text': 'test_en'
+            'test: with a sentence. or more text': 'test_en',
+            errorCodes: {
+              UNAUTHORIZED: 'Unauthorized',
+              'BAD REQUEST': 'Bad request'
+            }
           }
         },
         de: {
@@ -31,7 +35,11 @@ describe('Translator', () => {
       { args: ['test: with a sentence. or more text', { lngs: ['de'] }], expected: 'test_de' },
       { args: ['test: with a sentence. or more text', { lng: 'de' }], expected: 'test_de' },
       { args: ['test: with a sentence. or more text', { lng: 'fr' }], expected: 'test_en' },
-      { args: ['test: with a sentence. or more text', { lng: 'en-US' }], expected: 'test_en' }
+      { args: ['test: with a sentence. or more text', { lng: 'en-US' }], expected: 'test_en' },
+      { args: ['errorCodes.UNAUTHORIZED', { lng: 'en' }], expected: 'Unauthorized' },
+      { args: ['errorCodes.BAD REQUEST', { lng: 'en' }], expected: 'Bad request' },
+      { args: ['translation:errorCodes.UNAUTHORIZED', { lng: 'en' }], expected: 'Unauthorized' },
+      { args: ['translation:errorCodes.BAD REQUEST', { lng: 'en' }], expected: 'Bad request' }
     ]
 
     tests.forEach((test) => {
