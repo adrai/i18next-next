@@ -14,7 +14,9 @@ describe('Translator', () => {
             errorCodes: {
               UNAUTHORIZED: 'Unauthorized',
               'BAD REQUEST': 'Bad request'
-            }
+            },
+            UNAUTHORIZED: 'Unauthorized 2',
+            'BAD REQUEST': 'Bad request 2'
           }
         },
         de: {
@@ -39,7 +41,12 @@ describe('Translator', () => {
       { args: ['errorCodes.UNAUTHORIZED', { lng: 'en' }], expected: 'Unauthorized' },
       { args: ['errorCodes.BAD REQUEST', { lng: 'en' }], expected: 'Bad request' },
       { args: ['translation:errorCodes.UNAUTHORIZED', { lng: 'en' }], expected: 'Unauthorized' },
-      { args: ['translation:errorCodes.BAD REQUEST', { lng: 'en' }], expected: 'Bad request' }
+      { args: ['translation:errorCodes.BAD REQUEST', { lng: 'en' }], expected: 'Bad request' },
+      { args: ['translation:UNAUTHORIZED', { lng: 'en' }], expected: 'Unauthorized 2' },
+      {
+        args: ['translation:BAD REQUEST', { lng: 'en', keySeparator: '.' }],
+        expected: 'Bad request 2'
+      }
     ]
 
     tests.forEach((test) => {

@@ -49,6 +49,9 @@ class I18next extends EventEmitter {
       }
     }
     this.options = { ...defOpt, ...options }
+    if (options.keySeparator !== undefined) {
+      this.options.userDefinedKeySeparator = options.keySeparator
+    }
     this.language = this.options.lng
     if (this.language) this.languages = [this.language]
     if (!this.language && this.options.fallbackLng) this.languages = Array.isArray(this.options.fallbackLng) ? [...this.options.fallbackLng] : [this.options.fallbackLng]
@@ -498,7 +501,10 @@ class I18next extends EventEmitter {
     const nsSeparator = options.nsSeparator !== undefined ? options.nsSeparator : this.options.nsSeparator
     const keySeparator = options.keySeparator !== undefined ? options.keySeparator : this.options.keySeparator
     const wouldCheckForNsInKey = nsSeparator && key.indexOf(nsSeparator) > -1
-    const seemsNaturalLanguage = !looksLikeObjectPath(key, nsSeparator, keySeparator)
+    const seemsNaturalLanguage =
+      !this.options.userDefinedKeySeparator &&
+      !options.keySeparator &&
+      !looksLikeObjectPath(key, nsSeparator, keySeparator)
     if (wouldCheckForNsInKey && !seemsNaturalLanguage) {
       const parts = key.split(nsSeparator)
       if (nsSeparator !== keySeparator || (nsSeparator === keySeparator && this.options.ns && this.options.ns.indexOf(parts[0]) > -1)) {
