@@ -17,6 +17,10 @@ describe('Translator', () => {
             },
             UNAUTHORIZED: 'Unauthorized 2',
             'BAD REQUEST': 'Bad request 2'
+          },
+          test: {
+            anotherKey: 'from other ns',
+            'key with space': 'key with space from other ns'
           }
         },
         de: {
@@ -46,6 +50,10 @@ describe('Translator', () => {
       {
         args: ['translation:BAD REQUEST', { lng: 'en', keySeparator: '.' }],
         expected: 'Bad request 2'
+      },
+      {
+        args: ['test:key with space', { lng: 'en', nsSeparator: ':' }],
+        expected: 'key with space from other ns'
       }
     ]
 
