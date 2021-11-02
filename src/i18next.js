@@ -7,6 +7,17 @@ import ResourceStore from './ResourceStore.js'
 import throwIf from './throwIf.js'
 import defaultStack from './defaultStack.js'
 
+// binds the member functions of the given class instance so that they can be destructured.
+// this way you can for example just use t() instead of i18n.t()
+function bindMemberFunctions (inst) {
+  const mems = Object.getOwnPropertyNames(Object.getPrototypeOf(inst))
+  mems.forEach((mem) => {
+    if (typeof inst[mem] === 'function') {
+      inst[mem] = inst[mem].bind(inst)
+    }
+  })
+}
+
 function setResolvedLanguage (self, lng) {
   self.resolvedLanguage = undefined
   if (['cimode', 'dev'].indexOf(lng) > -1) return
@@ -82,6 +93,7 @@ class I18next extends EventEmitter {
         return this
       }
     })
+    bindMemberFunctions(this)
   }
 
   /**
@@ -620,13 +632,5 @@ class I18next extends EventEmitter {
 }
 
 export default function (options) {
-  const inst = new I18next(options)
-  // bind own functions to correct this, in this way you can for example just use t() instead of i18n.t()
-  const mems = Object.getOwnPropertyNames(Object.getPrototypeOf(inst))
-  mems.forEach((mem) => {
-    if (typeof inst[mem] === 'function') {
-      inst[mem] = inst[mem].bind(inst)
-    }
-  })
-  return inst
+  return new I18next(options)
 }

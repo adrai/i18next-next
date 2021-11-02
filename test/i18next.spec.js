@@ -20,7 +20,7 @@ describe('i18next', () => {
         newInstance = i18next({ bar: 'foo' })
       })
 
-      it('should not inherit options from inital i18next', () => {
+      it('should not inherit options from initial i18next', () => {
         should(newInstance.options.foo).eql(undefined)
         should(newInstance.options.bar).eql('foo')
       })
@@ -36,7 +36,7 @@ describe('i18next', () => {
         newInstance = await i18n.clone({ bar: 'foo' })
       })
 
-      it('should inherit options from inital i18next', () => {
+      it('should inherit options from initial i18next', () => {
         should(newInstance.options.foo).eql('bar')
         should(newInstance.options.bar).eql('foo')
       })
@@ -74,6 +74,13 @@ describe('i18next', () => {
   })
 
   describe('i18next - functions', () => {
+    describe('t', () => {
+      it('is usable as a free function', () => {
+        const { t } = i18n
+        should(t('key')).eql('key')
+      })
+    })
+
     describe('getFixedT', () => {
       it('should have lng, ns on t', () => {
         const t = i18n.getFixedT('de', 'common')
@@ -92,7 +99,7 @@ describe('i18next', () => {
 
   describe('chained resource manipulation', () => {
     describe('can add resources', () => {
-      it('adds resouces by addResource', () => {
+      it('adds resources by addResource', () => {
         i18n
           .addResource('de', 'translation', 'test', 'test')
           .addResource('de', 'translation', 'nest.test', 'test_nest')
@@ -100,7 +107,7 @@ describe('i18next', () => {
         should(i18n.getResource('de', 'translation', 'nest.test')).eql('test_nest')
       })
 
-      it('adds resouces by addResources', () => {
+      it('adds resources by addResources', () => {
         i18n
           .addResources('fr', 'translation', {
             hi: 'salut'
@@ -113,7 +120,7 @@ describe('i18next', () => {
         should(i18n.getResource('fr', 'translation', 'hello')).eql('bonjour')
       })
 
-      it('adds resouces by addResourceBundle', () => {
+      it('adds resources by addResourceBundle', () => {
         i18n
           .addResourceBundle('en.translation', { something1: 'deeper1' })
           .addResourceBundle('en.translation', { something2: 'deeper2' })
@@ -124,7 +131,7 @@ describe('i18next', () => {
       })
 
       describe('can remove resources bundle', () => {
-        it('removes resouces by removeResourceBundle', () => {
+        it('removes resources by removeResourceBundle', () => {
           i18n.removeResourceBundle('en', 'translation')
           should(i18n.getResourceBundle('en', 'translation')).eql(undefined)
         })
