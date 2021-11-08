@@ -459,7 +459,7 @@ class I18next extends EventEmitter {
       'ckb'
     ]
 
-    return rtlLngs.find((l) => lng.toLowerCase().indexOf(l) > -1) >= 0
+    return rtlLngs.find((l) => lng.toLowerCase().indexOf(l) > -1) > -1 || lng.toLowerCase().indexOf('-arab') > 1
       ? 'rtl'
       : 'ltr'
   }
