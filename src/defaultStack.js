@@ -131,9 +131,12 @@ const getI18nextFormat = (i18n) => {
 
             runSpecific.addI18nFormatLookupKeys(finalKeys, key, code, ns, options)
 
+            const needsZeroSuffixLookup = options[i18n.options.pluralOptionProperty] === 0 && !options.ordinal
             if (options[i18n.options.pluralOptionProperty] !== undefined) {
               const resolvedKey = runSpecific.resolvePlural(options[i18n.options.pluralOptionProperty], key, code, options)
               finalKeys.push(resolvedKey)
+              const zeroKey = `${key}${i18n.options.pluralSeparator}zero`
+              if (needsZeroSuffixLookup && resolvedKey !== zeroKey) finalKeys.push(zeroKey)
             }
 
             if (options[i18n.options.contextOptionProperty] !== undefined) {
@@ -144,8 +147,10 @@ const getI18nextFormat = (i18n) => {
             if (options[i18n.options.pluralOptionProperty] !== undefined && options[i18n.options.contextOptionProperty] !== undefined) {
               let resolvedKey = runSpecific.resolveContext(options[i18n.options.contextOptionProperty], key, options)
               if (resolvedKey) {
+                const zeroKey = `${resolvedKey}${i18n.options.pluralSeparator}zero`
                 resolvedKey = runSpecific.resolvePlural(options[i18n.options.pluralOptionProperty], resolvedKey, code, options)
                 finalKeys.push(resolvedKey)
+                if (needsZeroSuffixLookup && resolvedKey !== zeroKey) finalKeys.push(zeroKey)
               }
             }
 

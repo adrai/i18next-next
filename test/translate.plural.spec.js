@@ -13,6 +13,11 @@ describe('Translator', () => {
             test: 'test_en_without_count',
             test_one: 'test_en',
             test_other: 'tests_en'
+          },
+          translationWithZero: {
+            test_zero: 'test_zero',
+            test_one: 'test_en',
+            test_other: 'tests_en'
           }
         },
         de: {
@@ -53,6 +58,8 @@ describe('Translator', () => {
       { args: ['translation:test', {}], expected: 'test_en_without_count' },
       { args: ['translation:test', { count: 1 }], expected: 'test_en' },
       { args: ['translation:test', { count: 2 }], expected: 'tests_en' },
+      { args: ['translation:test', { count: 0 }], expected: 'tests_en' },
+      { args: ['translationWithZero:test', { count: 0 }], expected: 'test_zero' },
       { args: ['translation:test', { count: 1, lngs: ['en-US', 'en'] }], expected: 'test_en' },
       { args: ['translation:test', { count: 2, lngs: ['en-US', 'en'] }], expected: 'tests_en' },
       { args: ['translation:test', { count: 1, lngs: ['de'] }], expected: 'test_de' },

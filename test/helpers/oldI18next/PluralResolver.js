@@ -89,6 +89,7 @@ class PluralResolver {
   constructor (logger, languageUtils, options = {}) {
     this.languageUtils = languageUtils
     this.options = options
+    this.options.prepend = this.options.prepend || ''
     this.rules = createRules()
     this.logger = logger
   }

@@ -18,7 +18,14 @@ describe('Translator', () => {
             test_other: 'tests_en', // new plural rules
             test_male: 'test_male_en',
             test_male_other: 'tests_male_en', // new plural rules
-            nestedArray: [{ a: 'b', c: 'd' }, { a: 'b', c: 'd' }]
+            nestedArray: [{ a: 'b', c: 'd' }, { a: 'b', c: 'd' }],
+
+            testNew: 'testNew_en',
+            testNew_zero: 'testNew_zero_en',
+            testNew_other: 'testsNew_en', // new plural rules
+            testNew_male: 'testNew_male_en',
+            testNew_male_zero: 'testNew_male_zero_en',
+            testNew_male_other: 'testsNew_male_en' // new plural rules
           }
         }
       }))
@@ -32,7 +39,15 @@ describe('Translator', () => {
       { args: ['test', { context: 'unknown', count: 1 }], expected: 'test_en' },
       { args: ['test', { context: 'unknown', count: 2 }], expected: 'tests_en' },
       { args: ['test', { context: 'male', count: 1 }], expected: 'test_male_en' },
-      { args: ['test', { context: 'male', count: 2 }], expected: 'tests_male_en' }
+      { args: ['test', { context: 'male', count: 2 }], expected: 'tests_male_en' },
+
+      // context with zero pluralization
+      { args: ['testNew', { context: 'unknown', count: 0 }], expected: 'testNew_zero_en' },
+      { args: ['testNew', { context: 'unknown', count: 1 }], expected: 'testNew_en' },
+      { args: ['testNew', { context: 'unknown', count: 2 }], expected: 'testsNew_en' },
+      { args: ['testNew', { context: 'male', count: 0 }], expected: 'testNew_male_zero_en' },
+      { args: ['testNew', { context: 'male', count: 1 }], expected: 'testNew_male_en' },
+      { args: ['testNew', { context: 'male', count: 2 }], expected: 'testsNew_male_en' }
     ]
 
     tests.forEach((test) => {
