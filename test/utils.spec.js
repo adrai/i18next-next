@@ -36,7 +36,7 @@ describe('utils', () => {
     })
   })
 
-  describe('#deepFind', () => {
+  describe.only('#deepFind', () => {
     it('should get nested and flat values', () => {
       const obj = {
         a: {
@@ -69,7 +69,8 @@ describe('utils', () => {
         str: 'whatever',
         arr: [
           null
-        ]
+        ],
+        'x.y': 'please no'
       }
 
       const n = deepFind(obj, 'a.nested')
@@ -102,6 +103,8 @@ describe('utils', () => {
       should(arr2).eql(undefined)
       const arr3 = deepFind(obj, 'arr.1.title')
       should(arr3).eql(undefined)
+      const missing = deepFind(obj, 'x.y.z')
+      should(missing).eql(undefined)
     })
   })
 })
