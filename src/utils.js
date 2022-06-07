@@ -41,6 +41,7 @@ export function deepFind (obj, path, keySeparator = '.') {
         mix = current[p]
       }
       if (mix === undefined) return undefined
+      if (mix === null) return null
       if (path.endsWith(p)) {
         if (typeof mix === 'string') return mix
         if (p && typeof mix[p] === 'string') return mix[p]
